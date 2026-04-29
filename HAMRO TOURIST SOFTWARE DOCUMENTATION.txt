@@ -1,0 +1,716 @@
+
+HAMRO TOURIST
+SaaS Platform
+Complete Software Architecture & Technical Blueprint
+
+Prepared by: Solutions Architect
+Version 1.0  |  April 2026
+ 
+Table of Contents
+Table of Contents	1
+1. Executive Summary & Vision	1
+1.1 Core Value Proposition	1
+1.2 Free Plan Boundaries (Initial Scope)	1
+2. High-Level System Architecture	1
+2.1 Architecture Philosophy: Why Microservices?	1
+2.2 Architecture Layers	1
+2.3 Request Flow Diagrams	1
+2.3.1 Agency Visitor Requests (agencyname.hamrotourist.com)	1
+2.3.2 Custom Domain Request (agencyname.com)	1
+3. Cloudflare Architecture — DNS, Domains & CDN	1
+3.1 Cloudflare for SaaS (Custom Hostnames)	1
+3.2 DNS Record Architecture (hamrotourist.com zone)	1
+3.3 Cloudflare Workers — Tenant Resolution	1
+3.4 Cloudflare R2 — Media Storage	1
+3.5 Step-by-Step: Custom Domain Connection Flow	1
+4. Database Architecture — Multi-Tenancy Strategy	1
+4.1 Why Schema-per-Tenant?	1
+4.2 Master Schema (public schema — platform-level)	1
+4.2.1 tenants table	1
+4.3 Tenant Schema (per-agency schema — replicated for each)	1
+4.3.1 Geography Tables	1
+4.3.2 Product Tables	1
+4.3.3 Itinerary & Pricing Tables	1
+4.4 Pricing Model — Deep Dive	1
+5. Microservices — Detailed Specification	1
+5.1 Auth Service	1
+5.2 Tenant Service	1
+5.3 Product Service	1
+5.4 Website Builder Service	1
+5.5 Domain Service	1
+5.6 Media Service	1
+5.7 CRM Service	1
+6. Frontend Architecture	1
+6.1 Admin Dashboard (app.hamrotourist.com)	1
+6.2 Agency Website Renderer	1
+6.3 Theme Architecture	1
+6.4 Website Builder — Section System	1
+7. Complete Technology Stack	1
+8. API Gateway & Service Communication	1
+8.1 API Gateway Responsibilities	1
+8.2 Inter-Service Communication	1
+8.3 Tenant Context Pattern	1
+9. Deployment Architecture	1
+9.1 Infrastructure Overview	1
+9.2 Kubernetes Services	1
+9.3 CI/CD Pipeline (GitHub Actions)	1
+10. Agency Onboarding & Publish Flow	1
+10.1 Step-by-Step Onboarding	1
+10.2 Admin Panel Access After Custom Domain	1
+11. Security Architecture	1
+11.1 Security Measures	1
+12. Monorepo Folder Structure	1
+13. Plan Evolution & Feature Gating	1
+14. AI-Driven Development Roadmap	1
+Phase 1 — Core Infrastructure & Data Layer	1
+Phase 2 — Product Data Model & APIs	1
+Phase 3 — Media, Storage & Cloudflare Routing	1
+Phase 4 — Website Builder & Theme System	1
+Phase 5 — Admin Frontend (Dashboard)	1
+Phase 6 — Custom Domains, CRM & White-Label Admin	1
+Phase 7 — Billing, Plan Enforcement & Analytics	1
+Phase 8 — Booking Engine & Payments (Future)	1
+15. Key Architectural Decisions & Rationale	1
+16. Environment Variables & Configuration	1
+
+ 
+1. Executive Summary & Vision
+Hamro Tourist is a multi-tenant Software-as-a-Service (SaaS) platform purpose-built for travel agencies. It empowers agencies to manage their entire product catalogue — tours, treks, itineraries, activities, and packages — publish a fully branded website, and operate a CRM, all from a single dashboard. The platform is hosted on hamrotourist.com and each agency receives their own subdomain (agencyname.hamrotourist.com) or can connect a custom domain (agencyname.com) with full white-label admin access (admin.agencyname.com).
+
+1.1 Core Value Proposition
+•	Zero-infrastructure travel website in minutes (Shopify-equivalent for travel agencies)
+•	Rich product modeling: Tours, Treks, Activities, Packages with complex pricing
+•	Theme-based website builder with real-time preview and SEO controls
+•	Subdomain-first, custom domain-ready architecture via Cloudflare
+•	Plan-based feature gating (Free → Pro → Enterprise)
+•	White-label admin panel per agency after domain connection
+
+1.2 Free Plan Boundaries (Initial Scope)
+Feature	Free Plan Limit	Rationale
+Countries	5	Enough for regional agencies
+Regions / States per Country	3	Focus on core geography
+Tours	Unlimited per region	Drives conversion to paid
+Treks	Unlimited per region	Core product type
+Activities	Unlimited	Upsell mechanism
+Packages	Unlimited	High-value product
+Themes	3 pre-built themes	Choice without complexity
+Custom Domain	Not included (subdomain only)	Paid feature
+Admin Panel	app.hamrotourist.com	Shared SaaS panel
+Published Website	agencyname.hamrotourist.com	Subdomain hosting
+ 
+2. High-Level System Architecture
+The architecture is a domain-driven, microservices-based system fronted by an API Gateway, using a multi-tenant PostgreSQL strategy (shared database, schema-per-tenant), Cloudflare for DNS/CDN/routing, and Next.js for both the admin SPA and the dynamic agency website renderer.
+
+2.1 Architecture Philosophy: Why Microservices?
+We chose a microservices architecture for the following strategic reasons:
+•	Independent Scalability — The website renderer service will get high read traffic (visitors browsing agency sites), while the CRM and product services are write-heavy but low-frequency. Microservices let us scale each independently.
+•	Team Isolation — Each service has a clear owner and bounded context. The DNS/Domain service can be worked on independently of the Booking engine.
+•	Deployment Safety — A bug in the notification service cannot crash the website renderer. Services fail independently.
+•	Technology Flexibility — The website renderer can use Next.js SSR/SSG while internal services use NestJS REST/GraphQL APIs.
+•	Plan Enforcement — The Plan/Billing service is a separate gate that all other services query, making plan enforcement consistent and centralized.
+
+2.2 Architecture Layers
+Layer	Technology	Responsibility
+CDN & Edge	Cloudflare (Universal CDN)	DDoS, caching, SSL termination, domain routing
+DNS & Domain Management	Cloudflare API + Workers	Subdomain provisioning, custom domain CNAME
+API Gateway	Kong / AWS API Gateway / custom NestJS	Auth, rate limiting, routing to microservices
+Auth Service	NestJS + Passport + JWT + OAuth2	Login, registration, JWT issuance, RBAC
+Tenant Service	NestJS + PostgreSQL	Company onboarding, plan management, schema provisioning
+Product Service	NestJS + PostgreSQL	Tours, Treks, Activities, Packages, Itineraries, Pricing
+CRM Service	NestJS + PostgreSQL	Lead management, customer records, notes, pipeline
+Website Builder Service	NestJS + PostgreSQL + Redis	Theme config, layout, content blocks, SEO settings
+Media Service	NestJS + Cloudflare R2 + ImageKit	File upload, image optimization, CDN delivery
+Domain Service	NestJS + Cloudflare API	DNS record automation, custom domain verification
+Website Renderer	Next.js (SSR + ISR)	Renders agency website from config; serves all subdomains
+Notification Service	NestJS + BullMQ + SendGrid	Email, booking confirmation, onboarding flows
+Admin Frontend	Next.js (SPA mode)	Dashboard at app.hamrotourist.com or admin.domain.com
+Database	PostgreSQL (schema-per-tenant)	Primary data store; one schema per agency
+Cache	Redis (Upstash or self-hosted)	Session, theme config cache, rate limiting
+Object Storage	Cloudflare R2	Images, media assets (S3-compatible)
+Queue	BullMQ + Redis	Async jobs: email, image processing, DNS provisioning
+ 
+2.3 Request Flow Diagrams
+2.3.1 Agency Visitor Requests (agencyname.hamrotourist.com)
+When a visitor lands on an agency website, the following flow occurs:
+1.	Browser sends GET request to agencyname.hamrotourist.com
+2.	Cloudflare DNS resolves the wildcard *.hamrotourist.com CNAME to the Website Renderer cluster
+3.	Cloudflare Worker intercepts and reads the subdomain prefix (agencyname)
+4.	Worker forwards to Next.js Renderer with X-Tenant-Slug: agencyname header
+5.	Next.js middleware reads slug, queries Website Builder Service for theme config, layout, published status
+6.	Product Service is queried for published tours, treks, packages
+7.	Page is rendered server-side (SSR) or from ISR cache and returned to visitor
+
+ISR (Incremental Static Regeneration) means the first visitor gets SSR; subsequent visitors get the cached static version until the agency re-publishes or the cache TTL expires (e.g., 5 minutes). This gives the performance of static + freshness of SSR.
+
+2.3.2 Custom Domain Request (agencyname.com)
+8.	Agency adds CNAME record: @ or www → proxy.hamrotourist.com
+9.	Domain Service verifies ownership via DNS TXT record (_hamrotourist-verify.agencyname.com)
+10.	After verification, Cloudflare API issues a Custom Hostname certificate (via Cloudflare for SaaS)
+11.	Cloudflare stores the domain → tenant_slug mapping in its Custom Hostnames table
+12.	All future requests to agencyname.com follow the same renderer flow with tenant resolved from the custom hostname lookup
+13.	admin.agencyname.com is also CNAMEd → admin-proxy.hamrotourist.com and serves the Admin Frontend with the tenant context pre-loaded
+ 
+3. Cloudflare Architecture — DNS, Domains & CDN
+Cloudflare is the backbone of the entire routing and domain management strategy. Here is a detailed explanation of every Cloudflare component used and why.
+
+3.1 Cloudflare for SaaS (Custom Hostnames)
+This is the key Cloudflare product that powers custom domain support. It allows hamrotourist.com to act as a reverse proxy for thousands of agency custom domains — without managing individual DNS zones for each.
+
+•	You add hamrotourist.com zone to Cloudflare (this is your zone).
+•	You create a Fallback Origin: proxy.hamrotourist.com → your Website Renderer servers.
+•	When an agency connects agencyname.com, your Domain Service calls the Cloudflare API to create a Custom Hostname entry for agencyname.com.
+•	Cloudflare issues a free TLS certificate for agencyname.com and routes traffic through your fallback origin.
+•	The agency only needs to add one CNAME record at their registrar: www → proxy.hamrotourist.com
+
+3.2 DNS Record Architecture (hamrotourist.com zone)
+Record Type	Name	Value / Target	Purpose
+A / CNAME	hamrotourist.com	Load Balancer IP	Main marketing site
+CNAME	app.hamrotourist.com	Admin cluster	Shared admin panel
+CNAME	*.hamrotourist.com	renderer.hamrotourist.com	Wildcard for all agency subdomains
+CNAME	proxy.hamrotourist.com	renderer.hamrotourist.com	Fallback origin for Custom Hostnames
+CNAME	admin-proxy.hamrotourist.com	admin.renderer.hamrotourist.com	Admin proxy for custom domains
+CNAME	api.hamrotourist.com	API Gateway	All backend API calls
+TXT	_hamrotourist-verify.*	Dynamic per agency	Domain ownership verification
+MX	hamrotourist.com	mail.hamrotourist.com	Email for notifications
+
+3.3 Cloudflare Workers — Tenant Resolution
+A Cloudflare Worker runs at the edge (before requests hit your servers) and handles tenant resolution:
+
+// cloudflare-worker/tenant-router.js
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const host = url.hostname;
+
+    // Case 1: subdomain of hamrotourist.com
+    if (host.endsWith('.hamrotourist.com')) {
+      const slug = host.replace('.hamrotourist.com', '');
+      if (slug === 'app' || slug === 'api') return fetch(request);
+      return fetch(request, {
+        headers: { ...request.headers, 'X-Tenant-Slug': slug }
+      });
+    }
+
+    // Case 2: custom domain — lookup from KV store
+    const tenantSlug = await env.DOMAIN_MAP.get(host);
+    if (tenantSlug) {
+      return fetch(request, {
+        headers: { ...request.headers, 'X-Tenant-Slug': tenantSlug }
+      });
+    }
+    return new Response('Agency not found', { status: 404 });
+  }
+}
+
+Cloudflare KV (Key-Value store) is used as a lightweight domain→tenant mapping cache. When an agency connects a custom domain, the Domain Service writes to KV: { 'agencyname.com' → 'agencyname-slug' }. Workers read KV in ~1ms globally with zero cold starts.
+
+3.4 Cloudflare R2 — Media Storage
+Cloudflare R2 is an S3-compatible object storage with zero egress fees. All agency-uploaded images (banners, tour photos, activity images) are stored in R2 and served via a CDN URL. Each agency gets a folder prefix: /tenants/{agency-slug}/media/
+
+3.5 Step-by-Step: Custom Domain Connection Flow
+Step	Actor	Action	Technical Detail
+1	Agency Admin	Enters domain in Dashboard	POST /api/domains/connect { domain: 'myagency.com' }
+2	Domain Service	Generates verification TXT	Random token stored in DB + shown to agency
+3	Agency Admin	Adds TXT record at registrar	_hamrotourist-verify.myagency.com = token123
+4	Domain Service	Polls DNS every 60s	Uses dns.resolve('_hamrotourist-verify.myagency.com', 'TXT')
+5	Domain Service	On verification success	Calls Cloudflare API: POST /zones/{zone}/custom_hostnames
+6	Cloudflare	Issues TLS cert + registers hostname	Custom Hostname object created with SSL status
+7	Domain Service	Writes KV mapping	DOMAIN_MAP.put('myagency.com', 'agencyslug')
+8	Domain Service	Updates DB	tenant.custom_domain_status = 'active'
+9	Agency Admin	Adds CNAME at registrar	www → proxy.hamrotourist.com (guided UI)
+10	Visitor	Browses myagency.com	Fully functional, SSL-secured agency website
+ 
+4. Database Architecture — Multi-Tenancy Strategy
+We use the Shared Database, Schema-per-Tenant pattern. This means: one PostgreSQL cluster, but each agency has an isolated PostgreSQL schema (e.g., schema name = tenant_acme_travels). This gives us strong data isolation without the overhead of per-tenant database clusters.
+
+4.1 Why Schema-per-Tenant?
+Strategy	Pros	Cons	Verdict
+Shared DB + shared tables (row-level)	Cheapest, simplest migrations	Risk of data leakage; complex RLS policies	Not chosen — security risk
+Schema-per-tenant (chosen)	Strong isolation; simple queries; easy backup per tenant; migrate single tenant	Migration must run per schema; slightly more setup	CHOSEN — best balance
+Database-per-tenant	Maximum isolation; separate scaling	Very expensive at scale; complex ops	Future Enterprise tier only
+
+4.2 Master Schema (public schema — platform-level)
+4.2.1 tenants table
+Column	Type	Description
+id	UUID (PK)	Unique tenant identifier
+slug	VARCHAR(63) UNIQUE	URL-safe identifier (used in subdomain)
+company_name	VARCHAR(255)	Display name
+plan_id	FK → plans	Current subscription plan
+schema_name	VARCHAR(63)	PostgreSQL schema name (tenant_{slug})
+custom_domain	VARCHAR(255) NULL	Connected custom domain
+custom_domain_status	ENUM	pending | verifying | active | failed
+domain_verify_token	VARCHAR(64)	DNS TXT verification token
+published	BOOLEAN	Whether website is live
+published_at	TIMESTAMP	Last publish date
+created_at	TIMESTAMP	Account creation
+owner_user_id	UUID FK → users	Primary account holder
+
+4.3 Tenant Schema (per-agency schema — replicated for each)
+4.3.1 Geography Tables
+Table	Key Columns	Notes
+countries	id, name, code, slug, is_active	Max 5 on free plan (enforced by API)
+regions	id, country_id, name, slug, description, cover_image_url	Max 3 per country on free plan
+
+4.3.2 Product Tables
+Table	Key Columns	Notes
+tours	id, region_id, title, slug, description, difficulty, duration_days, cover_image, status	status: draft | published
+treks	id, region_id, title, slug, description, difficulty, max_altitude, cover_image, status	Same lifecycle as tours
+activities	id, region_id, title, slug, type (paragliding/bungee/etc), description, base_price, cover_image, status	Bookable independently
+packages	id, title, slug, description, cover_image, status	Cross-region; many-to-many with regions
+package_regions	package_id, region_id	Junction table
+tour_activities	tour_id, activity_id, inclusion_type (included|optional), extra_price	Activity attachment to tours
+trek_activities	trek_id, activity_id, inclusion_type, extra_price	Activity attachment to treks
+
+4.3.3 Itinerary & Pricing Tables
+Table	Key Columns	Notes
+itineraries	id, parent_id, parent_type (tour|trek|package), title, description, total_days	Each product can have multiple itineraries
+itinerary_days	id, itinerary_id, day_number, title, description, accommodation, meals	Per-day breakdown
+itinerary_pricing	id, itinerary_id, label, base_price, currency, valid_from, valid_to	Multiple price tiers per itinerary
+group_discounts	id, pricing_id, min_pax, max_pax, discount_type (% | fixed), discount_value	Stacking group discounts per pricing tier
+package_itineraries	id, package_id, title, total_days	Packages have their own custom itineraries
+package_itinerary_days	id, package_itinerary_id, day_number, title, description	Day-by-day for package
+package_pricing	id, package_itinerary_id, label, base_price, currency	Custom pricing per package itinerary
+
+4.4 Pricing Model — Deep Dive
+The pricing system is fully custom and hierarchical. Here is how it works end-to-end for a trek:
+•	A trek has multiple Itineraries (e.g., '8-Day Classic Route', '12-Day Extended Route').
+•	Each Itinerary has multiple Pricing Tiers (e.g., 'Standard Season', 'Peak Season', 'Early Bird').
+•	Each Pricing Tier has a base price and optional Group Discounts (e.g., 5–8 pax: 10% off; 9+ pax: 20% off).
+•	Activities attached to the trek/tour can be 'included' (price absorbed) or 'optional' (customer chooses at checkout; activity.extra_price is added to cart).
+
+Checkout price calculation: (Itinerary base price × pax) × group_discount_multiplier + SUM(optional_activities.extra_price per chosen activity × pax who selected it). This is computed server-side and never trusted from the client.
+ 
+5. Microservices — Detailed Specification
+
+5.1 Auth Service
+Attribute	Detail
+Stack	NestJS + Passport.js + JWT + bcrypt
+Database	public.users, public.sessions, public.roles
+Responsibilities	Registration, login, JWT issuance (access + refresh tokens), OAuth2 (Google), RBAC
+JWT Strategy	Short-lived access token (15min) + long-lived refresh token (30 days) stored in HttpOnly cookie
+RBAC Roles	platform_admin, agency_owner, agency_staff, agency_viewer
+Port / Endpoint	Internal: auth-svc:3001 | Public via gateway: /auth/*
+Key Endpoints	POST /auth/register, POST /auth/login, POST /auth/refresh, POST /auth/logout, GET /auth/me
+
+5.2 Tenant Service
+Attribute	Detail
+Stack	NestJS + TypeORM + PostgreSQL
+Responsibilities	Onboarding wizard, plan validation, schema provisioning, plan enforcement hooks
+Schema Provisioning	On new tenant creation: CREATE SCHEMA tenant_{slug}; run migration scripts to create all product tables in that schema
+Plan Enforcement	Exposes GET /tenant/{slug}/limits endpoint; all other services call this before creating resources
+Key Endpoints	POST /tenants (create), GET /tenants/:slug, PATCH /tenants/:slug/plan, GET /tenants/:slug/limits
+
+5.3 Product Service
+The largest and most complex service. Manages all travel product entities.
+Attribute	Detail
+Stack	NestJS + TypeORM (schema-aware) + PostgreSQL
+Schema Routing	Every repository call uses SET search_path = tenant_{slug} before queries. Achieved via a TenantContextInterceptor that reads X-Tenant-Slug from request headers.
+Entities	Countries, Regions, Tours, Treks, Activities, Packages, Itineraries, Pricing, GroupDiscounts, ActivityLinks
+Key Business Rules	Country limit check → Region limit check → product creation. Activity link validates inclusion_type. Pricing requires valid itinerary parent. Group discounts validated for non-overlapping pax ranges.
+API Style	REST with OpenAPI docs; GraphQL federation endpoint for the website renderer (read-only public queries)
+Key Endpoints	CRUD for all entities; POST /tours/:id/activities (link activity); GET /regions/:id/tours (public); etc.
+
+5.4 Website Builder Service
+Manages all website configuration for each tenant: theme selection, content blocks, SEO, banners, section order, published state.
+Attribute	Detail
+Stack	NestJS + PostgreSQL + Redis (config cache)
+Theme System	3 pre-built themes stored as JSON schema definitions. Each theme defines available sections, default layouts, and CSS variable slots.
+Content Model	website_configs table: theme_id, seo_title, seo_description, favicon_url, primary_color, font_family, sections (JSONB array), nav_links, footer_links, social_links
+Sections (like Shopify)	Hero Banner, Featured Tours, Region Grid, Testimonials, About Us, Contact Form, Activity Cards, Package Showcase, Newsletter Signup, Custom HTML Block
+Publishing Flow	PATCH /websites/:slug/publish triggers: validate config → write to DB → clear ISR cache via Next.js revalidate API → set published=true → return new URL
+SEO Fields	title, description, og:image, og:title, og:description, canonical URL, robots.txt setting, sitemap auto-generation
+Redis Cache	GET /websites/:slug/config is cached in Redis with 5min TTL. On publish, cache is invalidated.
+
+5.5 Domain Service
+Attribute	Detail
+Stack	NestJS + Cloudflare API client + dns module + BullMQ
+Responsibilities	Domain ownership verification, Cloudflare Custom Hostname provisioning, KV mapping updates, admin subdomain setup
+Cloudflare API Calls	POST /zones/{zone_id}/custom_hostnames (create), GET (status polling), DELETE (disconnect)
+Verification Queue	BullMQ job: every 60s check TXT record via DNS lookup until verified or 24h timeout
+Admin Domain	After custom domain activation: creates admin.{domain} Custom Hostname pointing to admin-proxy.hamrotourist.com
+KV Updates	On activation: CF_KV.put(domain, slug); on disconnect: CF_KV.delete(domain)
+
+5.6 Media Service
+Attribute	Detail
+Stack	NestJS + Cloudflare R2 SDK + Sharp (image optimization)
+Upload Flow	Client → presigned URL from Media Service → direct upload to R2 → R2 event → Media Service registers URL in DB
+Image Variants	On upload, BullMQ job creates: thumbnail (300px), card (800px), hero (1920px) variants via Sharp + stores in R2
+CDN URL Pattern	https://media.hamrotourist.com/tenants/{slug}/{hash}/{variant}.webp
+Access Control	Presigned URLs are scoped to tenant slug; service validates ownership before generating URL
+
+5.7 CRM Service
+Attribute	Detail
+Stack	NestJS + PostgreSQL (tenant schema)
+Tables	crm_contacts, crm_leads, crm_notes, crm_pipeline_stages, crm_activities_log
+Features	Contact management, lead pipeline (Kanban-style), notes per contact, activity timeline, tag system, search/filter
+Integration	When a visitor submits a contact form on the agency website, an API call creates a crm_lead record automatically
+Future	Email campaigns, WhatsApp integration, booking-to-lead conversion
+ 
+6. Frontend Architecture
+
+6.1 Admin Dashboard (app.hamrotourist.com)
+Attribute	Detail
+Framework	Next.js 14 (App Router) in SPA-like mode with client-side routing for dashboard pages
+UI Library	shadcn/ui + Tailwind CSS — professional, accessible component system
+State Management	Zustand for global state (tenant context, auth); React Query (TanStack) for server state
+Key Modules	Onboarding Wizard, Geography Manager, Product Manager (Tours/Treks/Activities/Packages), Itinerary Builder, Pricing Editor, Website Builder, CRM, Settings, Domain Manager
+Website Builder UI	Drag-and-drop section reordering (dnd-kit); inline text editing; live iframe preview of agency website; theme switcher
+Hosting	Vercel or self-hosted via Docker; served from app.hamrotourist.com
+Auth	JWT stored in HttpOnly cookie; Next.js middleware protects all /dashboard/* routes; redirects to /login if unauthenticated
+
+6.2 Agency Website Renderer
+Attribute	Detail
+Framework	Next.js 14 with App Router + ISR (Incremental Static Regeneration)
+Tenant Resolution	Middleware reads X-Tenant-Slug header (injected by Cloudflare Worker); all page data fetched with tenant context
+Route Structure	/ (home), /tours, /tours/[slug], /treks, /treks/[slug], /activities, /activities/[slug], /packages, /packages/[slug], /regions/[slug], /contact, /about
+Theme Rendering	Themes are stored as React component sets. ThemeProvider reads tenant's selected theme and renders the correct component tree.
+3 Themes	Theme 1: Adventure Bold (dark, dramatic, fullscreen heroes); Theme 2: Serene Journey (light, minimal, photography-first); Theme 3: Heritage Classic (warm tones, traditional travel agency aesthetic)
+SEO	Each page generates full OpenGraph tags, JSON-LD structured data (TouristAttraction, TouristTrip schemas), XML sitemap at /sitemap.xml, robots.txt at /robots.txt
+Performance	Images served via Cloudflare R2 CDN with next/image optimization; Core Web Vitals target: LCP < 2.5s, CLS < 0.1
+ISR Revalidation	On agency publish: POST /api/revalidate?slug={slug}&secret={token} triggers Next.js on-demand revalidation
+
+6.3 Theme Architecture
+Each theme is a self-contained React component library that accepts a standardized ThemeConfig prop. Agencies customize themes through the Website Builder; themes do not need to be re-coded per agency.
+
+// types/theme.ts
+interface ThemeConfig {
+  themeId: 'adventure-bold' | 'serene-journey' | 'heritage-classic';
+  colors: { primary: string; secondary: string; accent: string; };
+  fonts: { heading: string; body: string; };
+  sections: SectionConfig[]; // ordered array
+  seo: SEOConfig;
+  agency: { name: string; logo: string; tagline: string; };
+}
+
+6.4 Website Builder — Section System
+Like Shopify sections, each agency can add, remove, reorder, and configure pre-built sections:
+Section Type	Configurable Options	Notes
+Hero Banner	Headline, subtext, CTA button, background image/video, overlay opacity	Always first section
+Featured Tours	Select which tours to feature (up to 6), card layout (grid/carousel)	Pulls from Product Service
+Region Showcase	Select regions to display, show as map or grid	Pulls from regions
+Activity Cards	Select activities, card style, show pricing	Links to activity booking
+Package Showcase	Select packages, layout style	Premium product highlight
+Testimonials	Add/edit testimonials manually, star rating display	Manual content
+About Us	Rich text, team photo, mission statement	Static content block
+Why Choose Us	Icon + text feature boxes (up to 6)	USP block
+Contact Form	Form fields config, map embed, office address	Submits to CRM Service
+Newsletter Signup	Headline, subtext, button text	Email collection
+Custom HTML	Raw HTML/CSS/JS embed	Pro plan only
+ 
+7. Complete Technology Stack
+Category	Technology	Why This Choice
+Backend Language	TypeScript + Node.js	Type safety, huge ecosystem, same language as frontend
+Backend Framework	NestJS	Opinionated, modular, built-in DI, perfect for microservices
+Frontend Framework	Next.js 14 (App Router)	SSR + ISR for agency sites; excellent SEO; React ecosystem
+UI Components	shadcn/ui + Tailwind CSS	Accessible, customizable, no vendor lock-in
+Database	PostgreSQL 16	Schema isolation, JSONB for flexible section configs, full-text search
+ORM	TypeORM (schema-aware)	Dynamic schema switching; migration support per tenant
+Cache	Redis (Upstash for serverless)	Session store, config cache, BullMQ backend
+Queue	BullMQ + Redis	Reliable async jobs for DNS polling, image processing, emails
+Object Storage	Cloudflare R2	S3-compatible, zero egress fees, built-in CDN
+CDN & DNS	Cloudflare	Custom Hostnames (SaaS), Workers, KV, WAF, DDoS protection
+Email	SendGrid / Resend	Transactional emails: onboarding, booking confirmations
+Image Optimization	Sharp + Cloudflare R2 + Next/Image	WebP conversion, responsive variants, edge caching
+Search	PostgreSQL Full-Text Search (start) → Meilisearch (scale)	Tour/trek search with filters
+API Documentation	Swagger / OpenAPI (NestJS built-in)	Auto-generated API docs
+Containerization	Docker + Docker Compose (dev) → Kubernetes (prod)	Portable, scalable deployment
+CI/CD	GitHub Actions	Automated testing, building, deployment pipeline
+Monitoring	Grafana + Prometheus + Loki (or Datadog)	Metrics, logs, alerts per service
+Error Tracking	Sentry	Real-time error tracking with tenant context
+Infrastructure	AWS (or Hetzner for cost savings) + Cloudflare	Managed RDS, EKS or VPS + K3s
+Secret Management	HashiCorp Vault or AWS Secrets Manager	API keys, DB passwords, Cloudflare tokens
+ 
+8. API Gateway & Service Communication
+
+8.1 API Gateway Responsibilities
+•	Authentication verification — validates JWT on every request before forwarding to services
+•	Tenant Context Injection — extracts tenant slug from JWT claims or X-Tenant-Slug header; injects into all upstream requests
+•	Rate Limiting — per tenant, per endpoint (free plan: 100 req/min; pro: 1000 req/min)
+•	Request Routing — routes /products/* → Product Service, /auth/* → Auth Service, etc.
+•	CORS — configured to allow requests from *.hamrotourist.com and tenant custom domains
+•	Logging — every request logged with tenant_id, user_id, endpoint, latency for audit trail
+
+8.2 Inter-Service Communication
+Pattern	Use Case	Technology
+Synchronous REST	CRUD operations, plan limit checks, config reads	Axios / @nestjs/axios with service discovery
+Asynchronous Events	DNS verification complete, image processed, email send	BullMQ queues (Redis-backed)
+Event Bus (future)	Booking created, payment confirmed, plan upgraded	Redis Pub/Sub or RabbitMQ
+GraphQL (public)	Agency website reads product data (read-only, cached)	Apollo Server in Product Service
+
+8.3 Tenant Context Pattern
+Every API call carries tenant context. Here is the NestJS implementation pattern:
+// tenant-context.interceptor.ts
+@Injectable()
+export class TenantContextInterceptor implements NestInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler) {
+    const request = context.switchToHttp().getRequest();
+    const tenantSlug = request.headers['x-tenant-slug']
+                    || request.user?.tenantSlug;
+    if (!tenantSlug) throw new UnauthorizedException('No tenant context');
+    // Set PostgreSQL search_path for this request's DB connection
+    TenantContext.setSchema(`tenant_${tenantSlug}`);
+    return next.handle();
+  }
+}
+ 
+9. Deployment Architecture
+
+9.1 Infrastructure Overview
+We recommend a Kubernetes-based deployment (K3s on Hetzner for cost efficiency, or EKS on AWS for managed ops). Each microservice runs as a Kubernetes Deployment with HPA (Horizontal Pod Autoscaler).
+
+9.2 Kubernetes Services
+Service	Replicas (start)	CPU Request	Memory Request	Scaling Trigger
+Website Renderer	3	500m	512Mi	CPU > 60% or RPS > 500
+Product Service	2	250m	256Mi	CPU > 70%
+Auth Service	2	200m	256Mi	CPU > 70%
+Website Builder Service	2	200m	256Mi	CPU > 70%
+Domain Service	1	100m	128Mi	Manual (low traffic)
+Media Service	2	300m	512Mi	Queue depth > 100
+CRM Service	2	200m	256Mi	CPU > 70%
+Notification Service	1	100m	128Mi	Queue depth > 50
+Admin Frontend (Next.js)	2	250m	256Mi	CPU > 60%
+PostgreSQL	1 primary + 1 replica	2000m	4Gi	Manual (scale vertically)
+Redis	1 (or Upstash managed)	200m	512Mi	Managed
+
+9.3 CI/CD Pipeline (GitHub Actions)
+14.	Developer pushes to feature branch → PR opens → automated tests run (unit + integration)
+15.	PR merged to main → Docker images built and pushed to container registry (GHCR or ECR)
+16.	Helm chart values updated with new image tags
+17.	ArgoCD (GitOps) detects change → applies to staging cluster
+18.	Smoke tests run against staging
+19.	Manual approval gate → deploy to production with rolling update (zero downtime)
+20.	Database migrations run as Kubernetes Job before new pods start (migration-before-deployment pattern)
+ 
+10. Agency Onboarding & Publish Flow
+
+10.1 Step-by-Step Onboarding
+Step	Screen / Action	Backend Call	Notes
+1	Sign up with email/password or Google OAuth	POST /auth/register → POST /tenants	Tenant schema provisioned immediately
+2	Enter company name and slug	PATCH /tenants/:id	Slug becomes subdomain; unique check enforced
+3	Choose Theme (3 options with live preview)	PATCH /websites/:slug/theme	Can change anytime
+4	Add first country	POST /products/countries	Free plan: max 5
+5	Add regions under country	POST /products/regions	Free plan: max 3/country
+6	Add first tour or trek	POST /products/tours	With itinerary and pricing
+7	Customize website (sections, banners, text, colors)	PATCH /websites/:slug/config	Inline builder UI
+8	Preview website (iframe preview)	GET /websites/:slug/preview	Real-time preview
+9	Publish!	POST /websites/:slug/publish	Goes live at agencyname.hamrotourist.com
+10	(Paid) Connect custom domain	POST /domains/connect	Follow DNS verification flow
+
+10.2 Admin Panel Access After Custom Domain
+Once the agency connects agencyname.com:
+•	Website: agencyname.com (public website)
+•	Admin Panel: admin.agencyname.com (white-label, same UI but with agency branding)
+•	The Admin Frontend reads X-Tenant-Slug from the domain and pre-fills the tenant context
+•	The shared app.hamrotourist.com admin still works as a fallback
+•	Agency sees their logo on the admin panel login screen (configured in Website Builder)
+ 
+11. Security Architecture
+
+11.1 Security Measures
+Layer	Measure	Implementation
+Transport	HTTPS everywhere	Cloudflare Universal SSL (free) + Custom Hostname certs
+Authentication	JWT RS256 + refresh token rotation	Access: 15min, Refresh: 30 days, HttpOnly cookie
+Authorization	RBAC per tenant	platform_admin | agency_owner | agency_staff | viewer
+Tenant Isolation	Schema-per-tenant + search_path enforcement	Impossible to query another tenant's data in same request
+API Security	Rate limiting per tenant + IP	Cloudflare WAF + API Gateway limits
+Input Validation	class-validator + class-transformer on all DTOs	Prevents injection, validates all input types
+File Uploads	Presigned R2 URLs + type validation + size limits	No files pass through app servers
+Secrets	Vault / AWS Secrets Manager	No secrets in code or env files in production
+CORS	Whitelist of allowed origins	Only *.hamrotourist.com and verified custom domains
+Audit Logging	Every mutation logged with user_id, tenant_id, action, timestamp	Stored in audit_logs table in master schema
+DDoS	Cloudflare DDoS protection (free tier)	Automatic mitigation at Cloudflare edge
+SQL Injection	TypeORM parameterized queries only	No raw SQL string interpolation
+ 
+12. Monorepo Folder Structure
+We recommend a monorepo (Turborepo or NX) to manage all services and frontends in one repository with shared types and utilities.
+
+hamrotourist/
+├── apps/
+│   ├── admin-frontend/          # Next.js admin dashboard
+│   ├── website-renderer/        # Next.js agency website renderer
+│   └── marketing-site/          # hamrotourist.com landing page
+├── services/
+│   ├── auth-service/            # NestJS auth
+│   ├── tenant-service/          # NestJS multi-tenancy
+│   ├── product-service/         # NestJS products (tours/treks/etc)
+│   ├── website-builder-service/ # NestJS website config
+│   ├── media-service/           # NestJS file uploads
+│   ├── domain-service/          # NestJS DNS/Cloudflare
+│   ├── crm-service/             # NestJS CRM
+│   └── notification-service/    # NestJS emails/queue
+├── packages/
+│   ├── shared-types/            # TypeScript interfaces shared across all
+│   ├── theme-adventure-bold/    # Theme 1 React components
+│   ├── theme-serene-journey/    # Theme 2 React components
+│   ├── theme-heritage-classic/  # Theme 3 React components
+│   └── ui-components/           # Shared shadcn components
+├── infra/
+│   ├── k8s/                     # Kubernetes manifests / Helm charts
+│   ├── cloudflare/              # Workers, KV config, CF scripts
+│   └── terraform/               # Infrastructure as Code (AWS/Hetzner)
+├── migrations/
+│   ├── master/                  # Migrations for public schema
+│   └── tenant/                  # Migrations run per tenant schema
+└── tools/
+    ├── tenant-migrate.ts        # CLI: run tenant migrations
+    └── seed.ts                  # Dev seed data
+ 
+13. Plan Evolution & Feature Gating
+Feature	Free	Pro ($29/mo)	Business ($79/mo)	Enterprise
+Countries	5	Unlimited	Unlimited	Unlimited
+Regions per country	3	Unlimited	Unlimited	Unlimited
+Tours / Treks	Unlimited	Unlimited	Unlimited	Unlimited
+Activities	Unlimited	Unlimited	Unlimited	Unlimited
+Packages	Unlimited	Unlimited	Unlimited	Unlimited
+Themes	3 standard	3 + custom CSS	Custom themes	Custom themes
+Custom Domain	No	Yes	Yes	Yes
+Admin at admin.domain.com	No	Yes	Yes	Yes
+Custom HTML Sections	No	Yes	Yes	Yes
+Booking Engine (future)	No	No	Yes	Yes
+Payment Gateway (future)	No	No	Yes	Yes
+CRM	Basic	Full	Full + automation	Full + API
+Team Members	1	5	15	Unlimited
+Analytics Dashboard	Basic	Full	Full + custom reports	Custom BI
+API Access	No	Read-only	Full	Full + webhooks
+Support	Community	Email (24hr)	Priority (4hr)	Dedicated CSM
+Database isolation	Shared schema	Shared schema	Dedicated schema	Dedicated DB
+ 
+14. AI-Driven Development Roadmap
+Because AI is building this platform, development is structured by feature complexity and dependency order — not calendar time. Each phase must be fully working and tested before the next begins. AI builds, validates, and iterates within each phase before progressing.
+
+Phase 1 — Core Infrastructure & Data Layer
+Everything else depends on this. AI builds the foundation first: no UI, no product features — just the skeleton that all other phases plug into.
+•	Monorepo scaffold (Turborepo): all service folders, shared-types package, shared tsconfig
+•	PostgreSQL setup: public (master) schema with tenants, users, plans tables
+•	Auth Service: registration, login, JWT (RS256) with access + refresh tokens, RBAC roles
+•	Tenant Service: company onboarding, schema provisioning (CREATE SCHEMA tenant_{slug}), plan limits API
+•	Tenant migrations runner: CLI tool that applies tenant schema migrations to every existing tenant schema
+•	API Gateway: routing, JWT validation middleware, tenant context injection, rate limiting scaffold
+•	Redis setup: session store + BullMQ queue worker scaffold
+•	Docker Compose: all services running locally with hot reload
+•	GitHub Actions CI: lint, typecheck, unit tests on every PR
+
+Phase 2 — Product Data Model & APIs
+The full travel product domain — every entity, every relationship, every business rule — built as clean REST APIs with no frontend yet. AI validates all edge cases (plan limits, pricing overlaps, activity linking) at the API level first.
+•	Product Service: Countries (max 5 free), Regions (max 3/country free) — full CRUD with plan enforcement
+•	Tours and Treks: CRUD, linked to regions, status (draft/published), difficulty, cover image field
+•	Activities: independent entity with base_price, type enum, bookable standalone flag
+•	Activity linking: attach activity to tour/trek with inclusion_type (included | optional) and extra_price
+•	Packages: cross-region product, many-to-many with regions via package_regions junction
+•	Itinerary builder: parent polymorphic (tour | trek | package), multiple itineraries per product, day-by-day breakdown
+•	Pricing engine: multiple tiers per itinerary (label, base_price, currency, valid_from/to)
+•	Group discounts: non-overlapping pax ranges per pricing tier, discount_type (% | fixed)
+•	Checkout price calculator: server-side function — (base × pax × group_multiplier) + optional activities
+•	Full OpenAPI (Swagger) docs auto-generated for all endpoints
+
+Phase 3 — Media, Storage & Cloudflare Routing
+Connects the platform to Cloudflare's infrastructure. After this phase, agency subdomains work end-to-end.
+•	Media Service: presigned R2 upload URLs, Sharp image variants (thumbnail/card/hero in WebP), CDN URL registry
+•	Cloudflare R2 bucket setup with public CDN subdomain (media.hamrotourist.com)
+•	Cloudflare Worker: wildcard *.hamrotourist.com tenant slug extraction + X-Tenant-Slug header injection
+•	Cloudflare KV namespace: DOMAIN_MAP for custom domain → tenant slug lookups
+•	Website Renderer (Next.js): tenant resolution from header, ISR with 5-min TTL, placeholder pages for all routes
+•	Basic routing: /, /tours, /tours/[slug], /treks, /treks/[slug], /activities, /packages, /regions/[slug]
+•	On-demand ISR revalidation endpoint: POST /api/revalidate?slug=X&secret=Y
+
+Phase 4 — Website Builder & Theme System
+The most complex frontend phase. AI builds the theme component libraries and the builder service in parallel, then wires them together.
+•	Website Builder Service: website_configs table (theme, SEO, sections JSONB, colors, fonts, nav, footer)
+•	Theme 1 — Adventure Bold: dark dramatic UI, fullscreen hero, bold typography
+•	Theme 2 — Serene Journey: light minimal, photography-first, clean whitespace
+•	Theme 3 — Heritage Classic: warm tones, traditional agency aesthetic, serif fonts
+•	ThemeProvider in renderer: reads tenant theme config, renders correct component tree
+•	All 10 section types implemented per theme: Hero, Featured Tours, Region Grid, Activity Cards, Packages, Testimonials, About, Why Us, Contact Form, Newsletter
+•	Publish flow: validate config → write DB → clear ISR cache → set published=true → return live URL
+•	SEO generation: OpenGraph tags, JSON-LD (TouristAttraction, TouristTrip), sitemap.xml, robots.txt per agency
+
+Phase 5 — Admin Frontend (Dashboard)
+The full agency-facing dashboard. AI builds module by module, each fully functional before moving to the next.
+•	Onboarding wizard: sign up → company name/slug → theme pick → first country → first region → first product → publish
+•	Geography Manager: country and region CRUD with plan limit warnings in UI
+•	Product Manager: Tours, Treks, Activities, Packages — full CRUD forms with image upload
+•	Itinerary Builder: multi-itinerary editor per product, drag-and-drop day ordering, pricing tier table
+•	Group Discount Editor: pax range inputs with overlap validation, live price preview
+•	Activity Linker: attach activities to tours/treks, toggle included/optional, set extra_price
+•	Website Builder UI: section list with drag-and-drop reorder (dnd-kit), inline text editing, live iframe preview, theme switcher, color/font picker
+•	Media Library: upload, view, delete, copy CDN URL — scoped per tenant
+•	SEO Settings panel: title, description, OG image, favicon
+•	Publish button with confirmation and live URL display
+
+Phase 6 — Custom Domains, CRM & White-Label Admin
+The growth features that enable agencies to go fully independent from the hamrotourist.com subdomain.
+•	Domain Service: ownership verification via DNS TXT polling (BullMQ job, 60s interval, 24h timeout)
+•	Cloudflare for SaaS integration: POST /custom_hostnames on verification success, TLS cert auto-issued
+•	KV write on domain activation: DOMAIN_MAP.put(domain, slug)
+•	admin.domain.com Custom Hostname: white-label admin panel with agency logo on login screen
+•	Guided domain connection UI: step-by-step DNS instructions with real-time verification status polling
+•	CRM Service: contacts, leads (Kanban pipeline), notes per contact, activity timeline, tags, search
+•	Contact form → CRM lead auto-creation when visitor submits agency website contact form
+•	Notification Service: onboarding sequence emails, domain-verified alert, contact form notification to agency
+
+Phase 7 — Billing, Plan Enforcement & Analytics
+Monetisation layer. Without this phase the platform cannot generate revenue.
+•	Stripe integration: subscription plans (Free/Pro/Business), checkout session, webhook handlers for plan changes
+•	Plan enforcement hardening: every service calls /tenant/:slug/limits before resource creation; returns 402 with upgrade CTA on limit hit
+•	Billing portal: invoice history, plan upgrade/downgrade, payment method management (Stripe Customer Portal)
+•	Analytics Service: page view tracking (privacy-first, no cookies), top tours/treks by views, CRM lead conversion rate
+•	Agency analytics dashboard: traffic, top products, enquiry counts, plan usage meters
+
+Phase 8 — Booking Engine & Payments 
+Customer-facing booking. This phase is scoped for future build once Phases 1–7 are stable and generating revenue.
+•	Availability calendar: date-blocking per itinerary, pax limits, open/closed status
+•	Booking request flow: customer selects itinerary → chooses optional activities → enters group size → gets price → submits request
+•	Payment gateway: Stripe (international) + eSewa / Khalti (Nepal market)
+•	Booking confirmation emails to customer and agency
+•	Agency booking management dashboard: view, confirm, cancel, refund bookings
+•	Ticketing platform integration (events, one-day trips) — as announced in original scope
+ 
+15. Key Architectural Decisions & Rationale
+
+Decision	What We Chose	What We Rejected	Why
+Tenancy Model	Schema-per-tenant	Row-level security	Schema isolation is safer; no accidental data leakage; easy per-tenant backup
+Rendering Strategy	Next.js ISR	Pure SSR or pure SPA	ISR gives static performance (fast for visitors) with dynamic freshness (updates on publish)
+Custom Domains	Cloudflare for SaaS	Nginx per-domain config	Cloudflare automates TLS cert issuance, routing, and global CDN for every custom domain at scale
+Service Communication	REST + BullMQ (async)	gRPC or GraphQL federation only	REST is simpler to start; BullMQ handles unreliable async operations (DNS polling, emails) reliably
+Database per Service?	Shared PostgreSQL, separate schemas	Separate DB per microservice	Multiple DBs adds ops complexity early. Schema isolation gives 80% of the isolation benefit at 20% of the cost
+Frontend Framework	Next.js for both admin and renderer	Vue / Nuxt / Remix	One ecosystem to hire for; Next.js excels at both SSR (renderer) and SPA-like (admin)
+Theme System	React component sets	CSS-only themes	Component-level themes allow section-level customization; CSS-only would be too rigid
+Monorepo	Turborepo monorepo	Separate repos per service	Shared types (TypeScript interfaces) eliminate integration bugs; atomic commits across services
+Storage	Cloudflare R2	AWS S3	Zero egress fees at Cloudflare CDN edge. S3 charges for every GB transferred; R2 does not
+ 
+16. Environment Variables & Configuration
+# Auth Service
+JWT_PRIVATE_KEY=<RS256 private key>
+JWT_PUBLIC_KEY=<RS256 public key>
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+
+# Database
+DATABASE_URL=postgresql://user:pass@postgres:5432/hamrotourist
+REDIS_URL=redis://redis:6379
+
+# Cloudflare
+CLOUDFLARE_API_TOKEN=...         # scoped: DNS Edit + Custom Hostnames + KV Write
+CLOUDFLARE_ZONE_ID=...
+CLOUDFLARE_ACCOUNT_ID=...
+CLOUDFLARE_KV_NAMESPACE_ID=...   # DOMAIN_MAP KV namespace
+CLOUDFLARE_R2_ACCESS_KEY=...
+CLOUDFLARE_R2_SECRET_KEY=...
+CLOUDFLARE_R2_BUCKET=hamrotourist-media
+
+# Domain Service
+DOMAIN_VERIFICATION_POLL_INTERVAL_MS=60000
+DOMAIN_VERIFICATION_TIMEOUT_MS=86400000  # 24 hours
+FALLBACK_ORIGIN=proxy.hamrotourist.com
+
+# Next.js Renderer
+NEXT_PUBLIC_API_URL=https://api.hamrotourist.com
+REVALIDATE_SECRET=<random secret for on-demand ISR>
+
+# Email
+RESEND_API_KEY=...
+FROM_EMAIL=hello@hamrotourist.com
+
+
+Hamro Tourist SaaS — Architecture Blueprint v1.0
+This document should be reviewed every quarter and updated as the platform evolves. All architectural decisions should be recorded as Architecture Decision Records (ADRs) in the /docs/adr directory.
