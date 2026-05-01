@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Brand Primaries */
+  --ht-violet: #7C3AED;
+  --ht-violet-light: #A78BFA;
+  --ht-violet-dark: #5B21B6;
+  --ht-coral: #F97316;
+  --ht-coral-light: #FB923C;
+  --ht-coral-dark: #EA580C;
+  --ht-cyan: #06B6D4;
+  --ht-cyan-light: #67E8F9;
+  --ht-lime: #84CC16;
+  --ht-rose: #F43F5E;
+
+  /* Neutrals (dark-first) */
+  --ht-ink: #0A0A0F;
+  --ht-surface: #111118;
+  --ht-surface-2: #1A1A24;
+  --ht-border: #2A2A3A;
+  --ht-muted: #3D3D52;
+  --ht-text: #F1F0FF;
+  --ht-text-soft: #9B9BB8;
+  --ht-text-faint: #5C5C78;
+
+  /* Gradients */
+  --ht-grad-primary: linear-gradient(135deg, #7C3AED 0%, #06B6D4 100%);
+  --ht-grad-warm: linear-gradient(135deg, #F97316 0%, #F43F5E 100%);
+  --ht-grad-cool: linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%);
+  --ht-grad-surface: linear-gradient(145deg, #1A1A24 0%, #111118 100%);
+
+  /* Glow Effects */
+  --ht-glow-violet: 0 0 40px rgba(124, 58, 237, 0.35);
+  --ht-glow-coral: 0 0 40px rgba(249, 115, 22, 0.35);
+  --ht-glow-cyan: 0 0 40px rgba(6, 182, 212, 0.35);
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+
+  /* Fonts */
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* shadcn/ui overrides */
+@layer base {
+  :root {
+    --background: 0 0% 4%;
+    --foreground: 240 60% 97%;
+    --card: 240 12% 8%;
+    --card-foreground: 240 60% 97%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 10% 15%;
+    --secondary-foreground: 240 30% 70%;
+    --muted: 240 10% 20%;
+    --muted-foreground: 240 15% 55%;
+    --accent: 25 95% 53%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 350 89% 60%;
+    --border: 240 13% 20%;
+    --input: 240 13% 20%;
+    --ring: 262 83% 58%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-ht-ink text-ht-text font-body antialiased;
+  }
+  h1, h2, h3 {
+    @apply font-display;
+  }
+}

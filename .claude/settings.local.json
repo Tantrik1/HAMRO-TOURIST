@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh auth:*)",
+      "Bash(npm --version)",
+      "Bash(npm install:*)",
+      "Bash(for svc:*)",
+      "Bash(do mkdir:*)",
+      "Bash(done)",
+      "Bash(cd:*)",
+      "Bash(pnpm install:*)"
+    ]
+  }
+}

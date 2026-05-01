@@ -1,0 +1,21 @@
+{
+  "name": "hamrotourist",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:migrate:master": "pnpm --filter tenant-service run migration:run",
+    "db:seed": "pnpm --filter tenant-service run seed",
+    "tenant-migrate": "ts-node tools/tenant-migrate.ts",
+    "clean": "turbo run clean"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.0",
+    "typescript": "^5.7.0"
+  }
+}

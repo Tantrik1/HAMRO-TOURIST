@@ -1,0 +1,13 @@
+name = "hamrotourist-tenant-router"
+main = "workers/tenant-router.ts"
+compatibility_date = "2024-12-01"
+
+[[kv_namespaces]]
+binding = "DOMAIN_MAP"
+id = ""
+preview_id = ""
+
+[env.production]
+routes = [
+  { pattern = "*.hamrotourist.com", zone_name = "hamrotourist.com" }
+]
