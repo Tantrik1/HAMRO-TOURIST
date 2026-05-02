@@ -8,7 +8,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThan } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { UserEntity } from '../entities/user.entity';
@@ -100,27 +100,34 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string): Promise<AuthTokens> {
-    const storedTokens = await this.refreshTokenRepo.find({
-      where: { isRevoked: false },
+    // Get unexpired, non-revoked tokens for this user from refresh token metadata
+    // Store token prefix in DB to identify the right token without loading all
+    const tokenPrefix = refreshToken.slice(0, 16);
+
+    const matchedToken = await this.refreshTokenRepo.findOne({
+      where: {
+        tokenPrefix,
+        isRevoked: false,
+        expiresAt: MoreThan(new Date()),
+      },
       relations: ['user'],
     });
 
-    let matchedToken: RefreshTokenEntity | null = null;
-    for (const stored of storedTokens) {
-      const isMatch = await bcrypt.compare(refreshToken, stored.tokenHash);
-      if (isMatch && stored.expiresAt > new Date()) {
-        matchedToken = stored;
-        break;
-      }
+    if (!matchedToken) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    if (!matchedToken) {
+    // Verify the full token hash matches
+    const isMatch = await bcrypt.compare(refreshToken, matchedToken.tokenHash);
+    if (!isMatch) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
+    // Revoke the old token (rotation)
     matchedToken.isRevoked = true;
     await this.refreshTokenRepo.save(matchedToken);
 
+    this.logger.log(`Token refreshed for user: ${matchedToken.user.email}`);
     return this.generateTokens(matchedToken.user);
   }
 
@@ -170,13 +177,19 @@ export class AuthService {
 
     const refreshToken = uuidv4();
     const refreshHash = await bcrypt.hash(refreshToken, this.SALT_ROUNDS);
-    const refreshExpiry = this.config.get('JWT_REFRESH_EXPIRY', '30d');
+
+    // Parse refresh token expiry from config (default: 30 days)
+    const refreshExpiryDays = parseInt(this.config.get('JWT_REFRESH_EXPIRY_DAYS', '30'), 10) || 30;
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + (parseInt(refreshExpiry) || 30));
+    expiresAt.setDate(expiresAt.getDate() + refreshExpiryDays);
+
+    // Store token prefix for efficient lookup
+    const tokenPrefix = refreshToken.slice(0, 16);
 
     await this.refreshTokenRepo.save({
       userId: user.id,
       tokenHash: refreshHash,
+      tokenPrefix,
       expiresAt,
     });
 

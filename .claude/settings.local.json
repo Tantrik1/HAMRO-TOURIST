@@ -92,7 +92,8 @@
       "Bash(curl *)",
       "Bash(pnpm build *)",
       "Bash(docker exec docker-postgres-1 *)",
-      "Bash(docker exec *)"
+      "Bash(docker exec *)",
+      "Bash(git add *)"
     ]
   }
 }

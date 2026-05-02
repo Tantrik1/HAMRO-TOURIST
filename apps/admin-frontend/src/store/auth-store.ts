@@ -48,7 +48,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       data,
     );
     if (res.success) {
-      setTokens(res.data.accessToken, '');
+      setTokens(res.data.accessToken);
       set({ user: res.data.user, isAuthenticated: true });
       return { success: true };
     }
@@ -61,7 +61,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       password,
     });
     if (res.success) {
-      setTokens(res.data.accessToken, '');
+      setTokens(res.data.accessToken);
       set({ user: res.data.user, isAuthenticated: true });
       return { success: true };
     }

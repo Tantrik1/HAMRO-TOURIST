@@ -23,8 +23,11 @@ export class RefreshTokenEntity {
   user: UserEntity;
 
   @Column({ name: 'token_hash', type: 'varchar', length: 255 })
-  @Index('idx_refresh_tokens_token_hash')
   tokenHash: string;
+
+  @Column({ name: 'token_prefix', type: 'varchar', length: 16 })
+  @Index('idx_refresh_tokens_token_prefix')
+  tokenPrefix: string;
 
   @Column({ name: 'expires_at', type: 'timestamptz' })
   expiresAt: Date;
