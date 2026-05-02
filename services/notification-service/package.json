@@ -2,13 +2,30 @@
   "name": "notification-service",
   "version": "0.1.0",
   "private": true,
-  "scripts": { "build": "nest build", "dev": "nest start --watch", "start": "node dist/main", "typecheck": "tsc --noEmit", "test": "echo ok", "clean": "rm -rf dist" },
-  "dependencies": {
-    "@nestjs/common": "^11.0.0", "@nestjs/config": "^4.0.0", "@nestjs/core": "^11.0.0",
-    "@nestjs/platform-express": "^11.0.0", "@nestjs/bullmq": "^11.0.0",
-    "@hamrotourist/shared-types": "workspace:*",
-    "bullmq": "^5.0.0", "resend": "^4.0.0",
-    "reflect-metadata": "^0.2.2", "rxjs": "^7.8.1"
+  "scripts": {
+    "build": "nest build",
+    "dev": "nest start --watch",
+    "start": "node dist/main",
+    "typecheck": "tsc --noEmit",
+    "test": "echo ok",
+    "clean": "rm -rf dist"
   },
-  "devDependencies": { "@nestjs/cli": "^11.0.0", "@types/node": "^22.0.0", "typescript": "^5.7.0" }
+  "dependencies": {
+    "@hamrotourist/shared-types": "workspace:*",
+    "@nestjs/bullmq": "^11.0.0",
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/config": "^4.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/swagger": "^11.4.2",
+    "bullmq": "^5.0.0",
+    "reflect-metadata": "^0.2.2",
+    "resend": "^4.0.0",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
 }

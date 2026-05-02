@@ -2,12 +2,16 @@ name = "hamrotourist-tenant-router"
 main = "workers/tenant-router.ts"
 compatibility_date = "2024-12-01"
 
+# Fill in after creating KV namespace in Cloudflare dashboard
 [[kv_namespaces]]
 binding = "DOMAIN_MAP"
-id = ""
-preview_id = ""
+id = "1b8d5c999a6940ccaf41825637ca77c6"
+preview_id = "6fd1eebf4c344e52b2188d781578f756"
 
 [env.production]
 routes = [
-  { pattern = "*.hamrotourist.com", zone_name = "hamrotourist.com" }
+  # Handles all tenant subdomains — reserved ones (app, api, www) pass through
+  { pattern = "*.hamrotourist.com/*", zone_name = "hamrotourist.com" },
+  # Handles agency custom domains mapped via KV (agencyname.com)
+  # Add custom domain routes here per agency after domain verification
 ]

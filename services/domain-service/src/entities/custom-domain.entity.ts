@@ -20,22 +20,22 @@ export class CustomDomain {
   @Column({ unique: true })
   domain: string;
 
-  @Column({ name: 'cloudflare_hostname_id', nullable: true })
+  @Column({ name: 'cloudflare_hostname_id', type: 'varchar', nullable: true })
   cloudflareHostnameId: string | null;
 
   @Column({ type: 'enum', enum: VerificationStatus, default: VerificationStatus.PENDING, name: 'verification_status' })
   verificationStatus: VerificationStatus;
 
-  @Column({ name: 'cname_target', nullable: true })
+  @Column({ name: 'cname_target', type: 'varchar', nullable: true })
   cnameTarget: string | null;
 
-  @Column({ name: 'ssl_status', nullable: true })
+  @Column({ name: 'ssl_status', type: 'varchar', nullable: true })
   sslStatus: string | null;
 
   @Column({ name: 'last_checked_at', type: 'timestamptz', nullable: true })
   lastCheckedAt: Date | null;
 
-  @Column({ name: 'failure_reason', nullable: true })
+  @Column({ name: 'failure_reason', type: 'text', nullable: true })
   failureReason: string | null;
 
   @CreateDateColumn({ name: 'created_at' })

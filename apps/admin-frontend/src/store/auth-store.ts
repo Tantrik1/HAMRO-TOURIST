@@ -8,18 +8,27 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: string;
+  role?: string;
   tenantSlug: string | null;
+  isEmailVerified?: boolean;
 }
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  sendOtp: (email: string) => Promise<{ success: boolean; error?: string }>;
+  verifyAndRegister: (data: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    otp: string;
+  }) => Promise<{ success: boolean; error?: string }>;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (data: { email: string; password: string; firstName: string; lastName: string; companyName: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   loadUser: () => Promise<void>;
+  setUser: (user: User) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -27,20 +36,32 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isLoading: true,
 
-  login: async (email, password) => {
-    const res = await apiPost<{ accessToken: string; refreshToken: string; user: User }>('/auth/login', { email, password });
+  sendOtp: async (email) => {
+    const res = await apiPost<{ message: string }>('/auth/send-otp', { email });
+    if (res.success) return { success: true };
+    return { success: false, error: res.error.message };
+  },
+
+  verifyAndRegister: async (data) => {
+    const res = await apiPost<{ accessToken: string; user: User }>(
+      '/auth/register',
+      data,
+    );
     if (res.success) {
-      setTokens(res.data.accessToken, res.data.refreshToken);
+      setTokens(res.data.accessToken, '');
       set({ user: res.data.user, isAuthenticated: true });
       return { success: true };
     }
     return { success: false, error: res.error.message };
   },
 
-  register: async (data) => {
-    const res = await apiPost<{ accessToken: string; refreshToken: string; user: User }>('/auth/register', data);
+  login: async (email, password) => {
+    const res = await apiPost<{ accessToken: string; user: User }>('/auth/login', {
+      email,
+      password,
+    });
     if (res.success) {
-      setTokens(res.data.accessToken, res.data.refreshToken);
+      setTokens(res.data.accessToken, '');
       set({ user: res.data.user, isAuthenticated: true });
       return { success: true };
     }
@@ -50,7 +71,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     clearTokens();
     set({ user: null, isAuthenticated: false });
-    window.location.href = '/login';
+    if (typeof window !== 'undefined') window.location.href = '/auth?mode=login';
   },
 
   loadUser: async () => {
@@ -67,4 +88,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user: null, isAuthenticated: false, isLoading: false });
     }
   },
+
+  setUser: (user) => set({ user, isAuthenticated: true }),
 }));

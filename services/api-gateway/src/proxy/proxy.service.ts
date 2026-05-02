@@ -15,14 +15,14 @@ export class ProxyService {
     private readonly config: ConfigService,
   ) {
     this.serviceMap = {
-      auth: `http://localhost:${this.config.get('AUTH_SERVICE_PORT', 4001)}`,
-      tenants: `http://localhost:${this.config.get('TENANT_SERVICE_PORT', 4002)}`,
-      products: `http://localhost:${this.config.get('PRODUCT_SERVICE_PORT', 4003)}`,
-      websites: `http://localhost:${this.config.get('WEBSITE_BUILDER_SERVICE_PORT', 4004)}`,
-      media: `http://localhost:${this.config.get('MEDIA_SERVICE_PORT', 4005)}`,
-      domains: `http://localhost:${this.config.get('DOMAIN_SERVICE_PORT', 4006)}`,
-      crm: `http://localhost:${this.config.get('CRM_SERVICE_PORT', 4007)}`,
-      notifications: `http://localhost:${this.config.get('NOTIFICATION_SERVICE_PORT', 4008)}`,
+      auth: this.config.get('AUTH_SERVICE_URL', `http://localhost:${this.config.get('AUTH_SERVICE_PORT', 4001)}`),
+      tenants: this.config.get('TENANT_SERVICE_URL', `http://localhost:${this.config.get('TENANT_SERVICE_PORT', 4002)}`),
+      products: this.config.get('PRODUCT_SERVICE_URL', `http://localhost:${this.config.get('PRODUCT_SERVICE_PORT', 4003)}`),
+      websites: this.config.get('WEBSITE_BUILDER_SERVICE_URL', `http://localhost:${this.config.get('WEBSITE_BUILDER_SERVICE_PORT', 4004)}`),
+      media: this.config.get('MEDIA_SERVICE_URL', `http://localhost:${this.config.get('MEDIA_SERVICE_PORT', 4005)}`),
+      domains: this.config.get('DOMAIN_SERVICE_URL', `http://localhost:${this.config.get('DOMAIN_SERVICE_PORT', 4006)}`),
+      crm: this.config.get('CRM_SERVICE_URL', `http://localhost:${this.config.get('CRM_SERVICE_PORT', 4007)}`),
+      notifications: this.config.get('NOTIFICATION_SERVICE_URL', `http://localhost:${this.config.get('NOTIFICATION_SERVICE_PORT', 4008)}`),
     };
   }
 

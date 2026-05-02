@@ -16,7 +16,7 @@ interface RegionShowcaseProps {
 export const RegionShowcase: React.FC<RegionShowcaseProps> = ({ config, regions }) => {
   const heading = (config.heading as string) ?? 'Explore Regions';
   const subheading =
-    (config.subheading as string) ?? 'Discover the world's most breathtaking destinations.';
+    (config.subheading as string) ?? "Discover the world's most breathtaking destinations.";
 
   return (
     <section className="bg-[#111118] py-20 lg:py-28">

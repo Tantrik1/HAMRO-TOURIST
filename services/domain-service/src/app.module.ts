@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
+import { SnakeNamingStrategy } from '@hamrotourist/shared-types';
 import { CustomDomain } from './entities/custom-domain.entity';
 import { DomainModule } from './domain/domain.module';
 
@@ -19,6 +20,7 @@ import { DomainModule } from './domain/domain.module';
         database: config.get('DB_NAME', 'hamrotourist'),
         entities: [CustomDomain],
         synchronize: config.get('NODE_ENV') !== 'production',
+        namingStrategy: new SnakeNamingStrategy(),
       }),
     }),
     BullModule.forRootAsync({

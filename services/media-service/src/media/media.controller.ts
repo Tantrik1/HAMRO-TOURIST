@@ -27,7 +27,7 @@ export class MediaController {
     return ok(result);
   }
 
-  @Delete(':key(*)')
+  @Delete('*key')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete media file and its variants' })
   async deleteMedia(@Param('key') key: string) {

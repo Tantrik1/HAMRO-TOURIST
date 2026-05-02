@@ -40,7 +40,7 @@ export class Lead {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
-  @Column({ name: 'assigned_to', nullable: true })
+  @Column({ name: 'assigned_to', type: 'varchar', nullable: true })
   assignedTo: string | null;
 
   @Column({ name: 'expected_close_date', type: 'date', nullable: true })
@@ -52,7 +52,7 @@ export class Lead {
   @Column({ name: 'lost_at', type: 'timestamptz', nullable: true })
   lostAt: Date | null;
 
-  @Column({ name: 'lost_reason', nullable: true })
+  @Column({ name: 'lost_reason', type: 'varchar', nullable: true })
   lostReason: string | null;
 
   @CreateDateColumn({ name: 'created_at' })

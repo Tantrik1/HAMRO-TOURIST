@@ -1,0 +1,35 @@
+# Generic NestJS service Dockerfile for pnpm monorepo
+# Build from repo root: docker build -f Dockerfile.service --build-arg SERVICE_NAME=auth-service .
+
+ARG SERVICE_NAME
+ARG SERVICE_PORT=4000
+
+# ---- installer ----
+FROM node:20-alpine AS deps
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+WORKDIR /monorepo
+COPY . .
+RUN pnpm install --frozen-lockfile
+
+# ---- builder ----
+FROM deps AS builder
+ARG SERVICE_NAME
+RUN pnpm --filter @hamrotourist/shared-types build 2>/dev/null || true
+RUN pnpm --filter ${SERVICE_NAME} build
+
+# ---- deploy: flatten workspace deps into standalone dir ----
+FROM builder AS deployer
+ARG SERVICE_NAME
+RUN pnpm --filter ${SERVICE_NAME} deploy --prod /deploy
+RUN cp -r /monorepo/services/${SERVICE_NAME}/dist /deploy/dist
+
+# ---- runtime: minimal image ----
+FROM node:20-alpine AS runner
+ARG SERVICE_PORT
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=deployer /deploy .
+EXPOSE ${SERVICE_PORT}
+CMD ["node", "dist/main"]
