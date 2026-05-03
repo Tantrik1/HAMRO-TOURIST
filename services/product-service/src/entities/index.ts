@@ -10,3 +10,7 @@ export { ItineraryEntity } from './itinerary.entity';
 export { ItineraryDayEntity } from './itinerary-day.entity';
 export { ItineraryPricingEntity } from './itinerary-pricing.entity';
 export { GroupDiscountEntity } from './group-discount.entity';
+export { FaqEntity } from './faq.entity';
+export { PackageDestinationEntity } from './package-destination.entity';
+export { ActivityTrekEntity } from './activity-trek.entity';
+export { ActivityTourEntity } from './activity-tour.entity';

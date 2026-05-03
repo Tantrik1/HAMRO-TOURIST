@@ -5,6 +5,8 @@ import {
 } from 'typeorm';
 import { RegionEntity } from './region.entity';
 import { TrekActivityEntity } from './trek-activity.entity';
+import { FaqEntity } from './faq.entity';
+import { GroupDiscountEntity } from './group-discount.entity';
 
 @Entity('treks')
 export class TrekEntity {
@@ -33,14 +35,47 @@ export class TrekEntity {
   @Column({ name: 'max_altitude', type: 'int', nullable: true })
   maxAltitude: number | null;
 
+  @Column({ name: 'duration_days', type: 'int', default: 1 })
+  durationDays: number;
+
+  @Column({ name: 'base_price', type: 'decimal', precision: 10, scale: 2, default: 0 })
+  basePrice: number;
+
   @Column({ name: 'cover_image_url', type: 'varchar', length: 1024, nullable: true })
   coverImageUrl: string | null;
 
   @Column({ type: 'varchar', length: 20, default: 'draft' })
   status: string;
 
+  @Column({ type: 'jsonb', nullable: true })
+  highlights: string[] | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  inclusions: string[] | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  exclusions: string[] | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  itinerary: Record<string, any>[] | null;
+
+  @Column({ name: 'sort_order', type: 'int', default: 0 })
+  sortOrder: number;
+
+  @Column({ type: 'jsonb', nullable: true })
+  seo: Record<string, any> | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  media: Record<string, any> | null;
+
   @OneToMany(() => TrekActivityEntity, (ta) => ta.trek)
   trekActivities: TrekActivityEntity[];
+
+  @OneToMany(() => FaqEntity, (f) => f.entityId, { cascade: true })
+  faqs: FaqEntity[];
+
+  @OneToMany(() => GroupDiscountEntity, (gd) => gd.entityId, { cascade: true })
+  groupDiscounts: GroupDiscountEntity[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

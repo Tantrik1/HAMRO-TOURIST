@@ -4,6 +4,12 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { Request } from 'express';
 
+export interface ForwardedResponse {
+  status: number;
+  data: any;
+  setCookie?: string[];
+}
+
 @Injectable()
 export class ProxyService {
   private readonly logger = new Logger(ProxyService.name);
@@ -15,7 +21,6 @@ export class ProxyService {
     private readonly config: ConfigService,
   ) {
     this.serviceMap = {
-      // ✅ FIXED: Use environment variables with localhost fallbacks
       auth: this.config.get('AUTH_SERVICE_URL', `http://localhost:${this.config.get('AUTH_SERVICE_PORT', 4001)}`),
       tenants: this.config.get('TENANT_SERVICE_URL', `http://localhost:${this.config.get('TENANT_SERVICE_PORT', 4002)}`),
       products: this.config.get('PRODUCT_SERVICE_URL', `http://localhost:${this.config.get('PRODUCT_SERVICE_PORT', 4003)}`),
@@ -29,14 +34,20 @@ export class ProxyService {
     };
   }
 
-  async forward(serviceName: string, req: Request): Promise<any> {
+  async forward(serviceName: string, req: Request): Promise<ForwardedResponse> {
     const baseUrl = this.serviceMap[serviceName];
     if (!baseUrl) {
       throw new Error(`Unknown service: ${serviceName}`);
     }
 
-    const path = req.url.replace(`/api/${serviceName}`, '') || '/';
-    const url = `${baseUrl}/${serviceName}${path}`;
+    // Strip the gateway-only `/api/<service>` prefix; keep the rest of the path.
+    // For root resource calls (e.g. POST /api/tenants) the result is '' → '/'.
+    const stripPrefix = `/api/${serviceName}`;
+    let remainder = req.path.startsWith(stripPrefix)
+      ? req.path.slice(stripPrefix.length)
+      : req.path;
+    if (remainder && !remainder.startsWith('/')) remainder = '/' + remainder;
+    const url = `${baseUrl}/${serviceName}${remainder}`;
 
     this.logger.debug(`Forwarding ${req.method} ${req.url} → ${url}`);
 
@@ -47,6 +58,12 @@ export class ProxyService {
     if (req.headers['x-tenant-slug']) {
       headers['x-tenant-slug'] = req.headers['x-tenant-slug'] as string;
     }
+    if (req.headers['x-user-id']) {
+      headers['x-user-id'] = req.headers['x-user-id'] as string;
+    }
+    if (req.headers.cookie) {
+      headers['cookie'] = req.headers.cookie as string;
+    }
     headers['content-type'] = 'application/json';
 
     const response = await firstValueFrom(
@@ -56,10 +73,21 @@ export class ProxyService {
         headers,
         data: req.body,
         params: req.query,
+        // Don't throw on 4xx so we can pass error responses through.
+        validateStatus: () => true,
       }),
     );
 
-    return response.data;
+    const setCookieHeader = response.headers['set-cookie'];
+    return {
+      status: response.status,
+      data: response.data,
+      setCookie: Array.isArray(setCookieHeader)
+        ? setCookieHeader
+        : setCookieHeader
+          ? [setCookieHeader as string]
+          : undefined,
+    };
   }
 
   getServiceNames(): string[] {

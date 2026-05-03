@@ -33,12 +33,16 @@ export class TenantContextInterceptor implements NestInterceptor {
       throw new BadRequestException('Invalid tenant slug format');
     }
 
-    // ✅ Safe schema name generation
+    // Safe schema name generation: only [a-z0-9_] can appear after the prefix because
+    // `slug` was already validated above. PostgreSQL does NOT allow parameter placeholders
+    // in SET commands (SQLSTATE 42601), so we must interpolate — but it's safe here.
     const schema = `tenant_${slug.replace(/-/g, '_')}`;
+    if (!/^tenant_[a-z0-9_]+$/.test(schema)) {
+      throw new BadRequestException('Invalid tenant schema name');
+    }
 
     try {
-      // ✅ Use parameterized query (TypeORM handles escaping)
-      await this.dataSource.query(`SET search_path TO $1`, [schema]);
+      await this.dataSource.query(`SET search_path TO "${schema}"`);
     } catch (error) {
       this.logger.error(`Failed to set schema for ${slug}:`, error);
       throw new InternalServerErrorException('Database configuration error');

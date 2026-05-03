@@ -7,6 +7,7 @@ import { CountryEntity } from './country.entity';
 import { TourEntity } from './tour.entity';
 import { TrekEntity } from './trek.entity';
 import { ActivityEntity } from './activity.entity';
+import { FaqEntity } from './faq.entity';
 
 @Entity('regions')
 @Index(['slug'])  // ✅ Index for slug lookups
@@ -36,6 +37,15 @@ export class RegionEntity {
   @Column({ name: 'cover_image_url', type: 'varchar', length: 1024, nullable: true })
   coverImageUrl: string | null;
 
+  @Column({ name: 'sort_order', type: 'int', default: 0 })
+  sortOrder: number;
+
+  @Column({ type: 'jsonb', nullable: true })
+  seo: Record<string, any> | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  media: Record<string, any> | null;
+
   @OneToMany(() => TourEntity, (t) => t.region)
   tours: TourEntity[];
 
@@ -44,6 +54,9 @@ export class RegionEntity {
 
   @OneToMany(() => ActivityEntity, (a) => a.region)
   activities: ActivityEntity[];
+
+  @OneToMany(() => FaqEntity, (f) => f.entityId, { cascade: true })
+  faqs: FaqEntity[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

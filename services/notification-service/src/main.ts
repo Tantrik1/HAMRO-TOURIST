@@ -7,14 +7,15 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  app.setGlobalPrefix('api');
+  // No global 'api' prefix: the api-gateway forwards /api/notifications/... → /notifications/...
+  // and we must match the URL it actually calls. All other services follow the same convention.
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Notification Service')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
-  SwaggerModule.setup('api', app, SwaggerModule.createDocument(app, swaggerConfig));
+  SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, swaggerConfig));
 
   const port = process.env.NOTIFICATION_SERVICE_PORT || 4008;
   await app.listen(port);

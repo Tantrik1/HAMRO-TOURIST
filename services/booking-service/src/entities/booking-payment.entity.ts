@@ -46,7 +46,7 @@ export class BookingPayment {
   @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING })
   status: PaymentStatus;
 
-  @Column({ name: 'transaction_id', nullable: true })
+  @Column({ name: 'transaction_id', type: 'varchar', length: 255, nullable: true })
   transactionId: string | null;
 
   @Column({ name: 'gateway_response', type: 'jsonb', nullable: true })

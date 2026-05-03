@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
-import { apiGet, apiPost, apiDelete } from '@/lib/api';
+import { Plus, Trash2, Loader2, Edit2, X } from 'lucide-react';
+import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 
 export interface ResourceField {
   name: string;
@@ -42,6 +42,7 @@ export function ResourcePage({
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<Record<string, any>>({});
   const [error, setError] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   async function reload() {
     setLoading(true);
@@ -57,15 +58,32 @@ export function ResourcePage({
     setError('');
     setSubmitting(true);
     const payload = beforeSubmit ? beforeSubmit(form) : form;
-    const res = await apiPost(endpoint, payload);
+    const res = editingId
+      ? await apiPatch(`${endpoint}/${editingId}`, payload)
+      : await apiPost(endpoint, payload);
     setSubmitting(false);
     if (res.success) {
       setShowForm(false);
       setForm({});
+      setEditingId(null);
       reload();
     } else {
       setError(res.error.message);
     }
+  }
+
+  function handleEdit(item: any) {
+    setForm(item);
+    setEditingId(item.id);
+    setShowForm(true);
+    setError('');
+  }
+
+  function handleCancelEdit() {
+    setShowForm(false);
+    setForm({});
+    setEditingId(null);
+    setError('');
   }
 
   async function handleDelete(id: string) {
@@ -82,11 +100,17 @@ export function ResourcePage({
           <p className="font-body text-ht-soft mt-1">{subtitle}</p>
         </div>
         <button
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            if (showForm && editingId) {
+              handleCancelEdit();
+            } else {
+              setShowForm((v) => !v);
+            }
+          }}
           className="inline-flex items-center gap-2 bg-grad-primary text-white font-semibold rounded-full px-5 py-2.5 hover:shadow-glow-violet hover:scale-[1.02] transition-all"
         >
           <Plus className="w-4 h-4" />
-          {showForm ? 'Cancel' : newButtonLabel}
+          {showForm ? (editingId ? 'Cancel Edit' : 'Cancel') : newButtonLabel}
         </button>
       </div>
 
@@ -151,7 +175,7 @@ export function ResourcePage({
             className="mt-5 inline-flex items-center gap-2 bg-grad-primary text-white font-semibold rounded-full px-6 py-2.5 hover:shadow-glow-violet disabled:opacity-50"
           >
             {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            Save
+            {editingId ? 'Update' : 'Save'}
           </button>
         </form>
       )}
@@ -184,12 +208,22 @@ export function ResourcePage({
                     <p className="text-xs font-mono text-ht-text-faint mt-2">/{item.slug}</p>
                   )}
                 </div>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="p-2 rounded-md text-ht-soft hover:text-ht-rose hover:bg-ht-rose/10 transition opacity-0 group-hover:opacity-100"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                  <button
+                    onClick={() => handleEdit(item)}
+                    className="p-2 rounded-md text-ht-soft hover:text-ht-violet hover:bg-ht-violet/10 transition"
+                    title="Edit"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    className="p-2 rounded-md text-ht-soft hover:text-ht-rose hover:bg-ht-rose/10 transition"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}

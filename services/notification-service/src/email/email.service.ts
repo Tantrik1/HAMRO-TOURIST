@@ -12,7 +12,7 @@ import { PlanUpgradedEmail } from '../templates/plan-upgraded';
 import { PlanLimitEmail } from '../templates/plan-limit';
 import type { EmailJobType } from './email-job.interface';
 
-type TemplateRenderer = (payload: Record<string, unknown>) => { subject: string; html: string };
+type TemplateRenderer = (payload: Record<string, unknown>) => Promise<{ subject: string; html: string }>;
 
 @Injectable()
 export class EmailService {
@@ -26,37 +26,37 @@ export class EmailService {
     this.from = `${name} <${email}>`;
 
     this.renderers = {
-      'welcome': (p) => ({
+      'welcome': async (p) => ({
         subject: `Welcome to Hamro Tourist, ${p.agencyName}!`,
-        html: render(WelcomeEmail(p as any)),
+        html: await render(WelcomeEmail(p as any)),
       }),
-      'verify-email': (p) => ({
+      'verify-email': async (p) => ({
         subject: 'Verify your email address',
-        html: render(VerifyEmail(p as any)),
+        html: await render(VerifyEmail(p as any)),
       }),
-      'reset-password': (p) => ({
+      'reset-password': async (p) => ({
         subject: 'Reset your password',
-        html: render(ResetPasswordEmail(p as any)),
+        html: await render(ResetPasswordEmail(p as any)),
       }),
-      'domain-verified': (p) => ({
+      'domain-verified': async (p) => ({
         subject: `Your domain ${p.domain} is now active!`,
-        html: render(DomainVerifiedEmail(p as any)),
+        html: await render(DomainVerifiedEmail(p as any)),
       }),
-      'domain-pending': (p) => ({
+      'domain-pending': async (p) => ({
         subject: `Action needed: configure DNS for ${p.domain}`,
-        html: render(DomainPendingEmail(p as any)),
+        html: await render(DomainPendingEmail(p as any)),
       }),
-      'new-lead': (p) => ({
+      'new-lead': async (p) => ({
         subject: `New inquiry from ${p.leadName}`,
-        html: render(NewLeadEmail(p as any)),
+        html: await render(NewLeadEmail(p as any)),
       }),
-      'plan-upgraded': (p) => ({
+      'plan-upgraded': async (p) => ({
         subject: `You've upgraded to ${p.planName}!`,
-        html: render(PlanUpgradedEmail(p as any)),
+        html: await render(PlanUpgradedEmail(p as any)),
       }),
-      'plan-limit': (p) => ({
+      'plan-limit': async (p) => ({
         subject: `You've reached your ${p.resourceName} limit`,
-        html: render(PlanLimitEmail(p as any)),
+        html: await render(PlanLimitEmail(p as any)),
       }),
     };
   }
@@ -68,7 +68,7 @@ export class EmailService {
       return;
     }
 
-    const { subject, html } = renderer(payload);
+    const { subject, html } = await renderer(payload);
 
     const { error } = await resend.emails.send({
       from: this.from,

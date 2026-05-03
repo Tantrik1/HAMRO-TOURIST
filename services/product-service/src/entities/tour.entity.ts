@@ -4,7 +4,10 @@ import {
   ManyToOne, JoinColumn, OneToMany, Index,
 } from 'typeorm';
 import { RegionEntity } from './region.entity';
+import { TrekEntity } from './trek.entity';
 import { TourActivityEntity } from './tour-activity.entity';
+import { FaqEntity } from './faq.entity';
+import { GroupDiscountEntity } from './group-discount.entity';
 
 @Entity('tours')
 @Index(['slug'])  // ✅ Index for slug lookups
@@ -22,6 +25,13 @@ export class TourEntity {
   @JoinColumn({ name: 'region_id' })
   region: RegionEntity;
 
+  @Column({ name: 'destination_id', type: 'uuid', nullable: true })
+  destinationId: string | null;
+
+  @ManyToOne(() => TrekEntity, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'destination_id' })
+  destination: TrekEntity;
+
   @Column({ type: 'varchar', length: 255 })
   title: string;
 
@@ -38,6 +48,9 @@ export class TourEntity {
   @Column({ name: 'duration_days', type: 'int', default: 1 })
   durationDays: number;
 
+  @Column({ name: 'base_price', type: 'decimal', precision: 10, scale: 2, default: 0 })
+  basePrice: number;
+
   @Column({ name: 'cover_image_url', type: 'varchar', length: 1024, nullable: true })
   coverImageUrl: string | null;
 
@@ -45,8 +58,35 @@ export class TourEntity {
   @Index()  // ✅ Index on status
   status: string;
 
+  @Column({ type: 'jsonb', nullable: true })
+  highlights: string[] | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  inclusions: string[] | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  exclusions: string[] | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  itinerary: Record<string, any>[] | null;
+
+  @Column({ name: 'sort_order', type: 'int', default: 0 })
+  sortOrder: number;
+
+  @Column({ type: 'jsonb', nullable: true })
+  seo: Record<string, any> | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  media: Record<string, any> | null;
+
   @OneToMany(() => TourActivityEntity, (ta) => ta.tour)
   tourActivities: TourActivityEntity[];
+
+  @OneToMany(() => FaqEntity, (f) => f.entityId, { cascade: true })
+  faqs: FaqEntity[];
+
+  @OneToMany(() => GroupDiscountEntity, (gd) => gd.entityId, { cascade: true })
+  groupDiscounts: GroupDiscountEntity[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

@@ -7,7 +7,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  app.setGlobalPrefix('api');
+  // No global 'api' prefix: api-gateway forwards /api/domains/... → /domains/...
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Domain Service')

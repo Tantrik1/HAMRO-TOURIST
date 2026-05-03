@@ -36,7 +36,7 @@ export class ImageProcessingProcessor extends WorkerHost {
       for (const variant of VARIANTS) {
         const variantBuffer = await sharp(originalBuffer)
           .resize(variant.width, null, { withoutEnlargement: true })
-          .webp({ quality: 80 })
+          .webp({ quality: 95, effort: 4 })
           .toBuffer();
 
         const variantKey = `${basePath}/${variant.name}.webp`;

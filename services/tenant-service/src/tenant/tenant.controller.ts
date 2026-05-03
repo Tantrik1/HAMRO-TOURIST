@@ -25,7 +25,9 @@ export class TenantController {
     @Body() dto: CreateTenantDto,
     @Headers('x-user-id') xUserId?: string,
   ) {
-    const ownerUserId = dto.ownerUserId || xUserId || 'placeholder-user-id';
+    // Trust x-user-id from the gateway (derived from the validated JWT) over the
+    // body field, which a malicious client could forge.
+    const ownerUserId = xUserId || dto.ownerUserId || 'placeholder-user-id';
     const tenant = await this.tenantService.create(dto, ownerUserId);
     return ok(tenant);
   }

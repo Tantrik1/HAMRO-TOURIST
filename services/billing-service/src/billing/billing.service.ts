@@ -178,9 +178,10 @@ export class BillingService {
 
   private async syncPlanToTenant(tenantSlug: string, plan: string) {
     try {
+      // tenant-service has no '/api' global prefix — call its route directly.
       await firstValueFrom(
         this.httpService.patch(
-          `${this.tenantServiceUrl}/api/tenants/${tenantSlug}/plan`,
+          `${this.tenantServiceUrl}/tenants/${tenantSlug}/plan`,
           { plan },
           { headers: { 'content-type': 'application/json' } },
         ),

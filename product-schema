@@ -1,0 +1,571 @@
+Advanced CMS Schema
+Full Entity & Field Specification
+Travel Platform — Admin Panel & Website Builder
+v2.0  ·  2025
+
+1. Overview & Design Principles
+This document defines the complete advanced schema for all CMS entities in the travel platform. Every entity that has a public URL — Country, Region, Destination (Trek), Tour, Activity, and Package — shares a standardised set of blocks for SEO, media, and FAQs, while also carrying its own product-specific fields.
+
+1.1  Shared Blocks (Applied to All Entities)
+The following blocks appear on every entity. Rather than duplicating fields, each entity stores a reference to these block structures as embedded JSON columns or separate related tables:
+•	SEO Settings — meta title, description, keywords, OG tags, canonical URL, robots directives, JSON-LD structured data
+•	Media — bannerImage (16:9), cardImage (3:2), ogImage (1.91:1), galleryImages[ ]
+•	FAQs — ordered list of question/answer pairs with active toggle
+•	Group Discounts — tiered pricing by group size (percentage or fixed-amount off)
+
+1.2  Entity Hierarchy
+Country → Region → Destination (Trek) / Tour / Activity / Package
+Packages are independent of the region hierarchy — they can link multiple destinations across different regions and carry their own custom itinerary, price, and group discount structure.
+
+Note: All slug fields are auto-generated from the title/name on creation and should not be edited manually unless a redirect is configured.
+
+ 
+2. Shared Block Specifications
+2.1  SEO Settings Block
+Every entity stores an embedded seo JSON object (or a separate seo_settings table with a polymorphic FK). The following fields apply to all entity types.
+
+Field	Type	Required	Description / Notes
+metaTitle	string	No	SEO title tag. Max 60 chars. Falls back to entity title if empty.
+metaDescription	string	No	Meta description. Max 160 chars. Falls back to truncated description.
+metaKeywords	string[]	No	Array of keyword strings for keyword meta tag.
+ogTitle	string	No	Open Graph title. Falls back to metaTitle.
+ogDescription	string	No	Open Graph description. Falls back to metaDescription.
+ogImage	string	No	URL of OG share image. Recommended ratio 1.91:1 (1200x630px).
+canonicalUrl	string	No	Explicit canonical URL. Auto-generated from slug if blank.
+noIndex	boolean	No	Exclude from search engine indexing. Default false.
+noFollow	boolean	No	Prevent crawling of outbound links. Default false.
+structuredData	JSON	No	Custom JSON-LD schema markup (e.g. TouristDestination, TouristAttraction).
+
+Tip: metaTitle and metaDescription are the two highest-priority SEO fields. Always populate them in the admin panel. Leaving them blank causes the site to fall back to the entity title/description, which may exceed recommended character limits.
+
+2.2  Media Fields Block
+Image URLs are stored as strings pointing to the CDN or object storage path. The admin panel enforces ratio validation at upload time with crop guidance.
+
+Field	Type	Required	Description / Notes
+bannerImage	string (URL)	No	Hero/banner image. Recommended ratio 16:9 (1920x1080px min). Displayed at full width on page headers.
+cardImage	string (URL)	No	Card/thumbnail image. Recommended ratio 3:2 (600x400px min). Used in listing grids and search results.
+ogImage	string (URL)	No	Social share preview image. Ratio 1.91:1 (1200x630px). Separate from bannerImage.
+galleryImages	string[]	No	Array of image URLs for photo gallery/carousel. No fixed limit but 8–16 recommended.
+altText	string	No	Alt text for bannerImage (accessibility + SEO).
+cardImageAlt	string	No	Alt text for cardImage.
+
+Image Field	Ratio	Recommended Size	Where Used
+bannerImage	16 : 9	1920 × 1080 px	Page hero headers, full-width banners
+cardImage	3 : 2	600 × 400 px	Listing grids, search results, related cards
+ogImage	1.91 : 1	1200 × 630 px	Social media share previews (Facebook, Twitter, WhatsApp)
+galleryImages[]	Any (prefer 16:9)	1280 × 720 px min	Photo gallery / image carousel on detail page
+
+2.3  FAQs Block
+Each entity supports an ordered list of FAQ items stored as a separate faqs table (polymorphic) or as a JSON array column.
+
+Field	Type	Required	Description / Notes
+question	string	Yes	The FAQ question text.
+answer	string	Yes	The answer body. Supports rich text / markdown.
+sortOrder	integer	No	Display order (ascending). Default 0.
+isActive	boolean	No	Show/hide this FAQ without deleting. Default true.
+
+Tip: FAQs are rendered on the public page and also injected into the entity's JSON-LD structured data as FAQPage schema, improving search snippet visibility.
+
+2.4  Group Discounts Block
+All product types — Destination (Trek), Tour, Activity, and Package — support tiered group discounts. Discounts are applied on top of the base price during checkout. Multiple tiers can be configured (e.g. 5–9 pax: 5% off, 10–15 pax: 10% off, 16+ pax: 15% off).
+
+Field	Type	Required	Description / Notes
+minPax	integer	Yes	Minimum number of people to qualify for this tier.
+maxPax	integer	No	Maximum people for this tier. Null = no upper limit.
+discountType	enum	Yes	Values: percentage | fixed_amount
+discountValue	decimal(10,2)	Yes	Percentage (0–100) or fixed currency amount.
+label	string	No	Human-friendly tier name (e.g. 'Family Group', 'School Group').
+isActive	boolean	No	Enable/disable tier without deleting. Default true.
+
+Note: Tiers must not overlap in their pax ranges. The admin panel should validate that (minPax of tier N+1) > (maxPax of tier N). If maxPax is null on a tier, no further tiers may be added.
+
+Tier Label	Min Pax	Max Pax	Discount Type	Discount Value
+Small Group	2	4	percentage	5%
+Family Group	5	9	percentage	8%
+School / Club	10	19	percentage	12%
+Large Group	20	(no limit)	percentage	18%
+
+Example above: A booking for 12 people on a trek priced at $500/person would receive 12% off, bringing the price to $440/person.
+
+ 
+3. Country
+3.1  Core Fields
+Field	Type	Required	Description / Notes
+id	uuid	Yes	Primary key. Auto-generated.
+name	string	Yes	Country display name. Max 255 chars.
+code	string	Yes	ISO country code. 2–10 chars (e.g. NP, IN, US).
+slug	string	Yes	URL slug. Auto-generated from name. Unique, lowercase, alphanumeric + hyphens.
+isActive	boolean	No	Publish/unpublish. Default true.
+createdAt	timestamp	—	Auto-set on creation.
+updatedAt	timestamp	—	Auto-updated on save.
+
+3.2  SEO Block (Country)
+Embedded on the country entity. Populates the country landing page (e.g. /nepal).
+Field	Type	Required	Description / Notes
+metaTitle	string	No	SEO title tag. Max 60 chars. Falls back to entity title if empty.
+metaDescription	string	No	Meta description. Max 160 chars. Falls back to truncated description.
+metaKeywords	string[]	No	Array of keyword strings for keyword meta tag.
+ogTitle	string	No	Open Graph title. Falls back to metaTitle.
+ogDescription	string	No	Open Graph description. Falls back to metaDescription.
+ogImage	string	No	URL of OG share image. Recommended ratio 1.91:1 (1200x630px).
+canonicalUrl	string	No	Explicit canonical URL. Auto-generated from slug if blank.
+noIndex	boolean	No	Exclude from search engine indexing. Default false.
+noFollow	boolean	No	Prevent crawling of outbound links. Default false.
+structuredData	JSON	No	Custom JSON-LD schema markup (e.g. TouristDestination, TouristAttraction).
+
+3.3  Media Block (Country)
+Field	Type	Required	Description / Notes
+bannerImage	string (URL)	No	Hero/banner image. Recommended ratio 16:9 (1920x1080px min). Displayed at full width on page headers.
+cardImage	string (URL)	No	Card/thumbnail image. Recommended ratio 3:2 (600x400px min). Used in listing grids and search results.
+ogImage	string (URL)	No	Social share preview image. Ratio 1.91:1 (1200x630px). Separate from bannerImage.
+galleryImages	string[]	No	Array of image URLs for photo gallery/carousel. No fixed limit but 8–16 recommended.
+altText	string	No	Alt text for bannerImage (accessibility + SEO).
+cardImageAlt	string	No	Alt text for cardImage.
+
+3.4  FAQs (Country)
+FAQs displayed on the country page. Typically cover visa, best season, currency, safety, and travel tips.
+Field	Type	Required	Description / Notes
+question	string	Yes	The FAQ question text.
+answer	string	Yes	The answer body. Supports rich text / markdown.
+sortOrder	integer	No	Display order (ascending). Default 0.
+isActive	boolean	No	Show/hide this FAQ without deleting. Default true.
+
+Tip: Countries do not have a group discount block — discounts are configured at the product level (Trek, Tour, Activity, Package).
+
+ 
+4. Region
+4.1  Core Fields
+Field	Type	Required	Description / Notes
+id	uuid	Yes	Primary key.
+countryId	uuid FK	Yes	References Country.id. Indexed.
+name	string	Yes	Region display name. Max 255 chars.
+slug	string	Yes	Unique URL slug. Indexed.
+description	text	No	Rich-text region description shown on region page.
+isActive	boolean	No	Publish/unpublish. Default true.
+sortOrder	integer	No	Display order in listings. Default 0.
+createdAt	timestamp	—	Auto-set.
+updatedAt	timestamp	—	Auto-updated.
+
+4.2  SEO Block (Region)
+Field	Type	Required	Description / Notes
+metaTitle	string	No	SEO title tag. Max 60 chars. Falls back to entity title if empty.
+metaDescription	string	No	Meta description. Max 160 chars. Falls back to truncated description.
+metaKeywords	string[]	No	Array of keyword strings for keyword meta tag.
+ogTitle	string	No	Open Graph title. Falls back to metaTitle.
+ogDescription	string	No	Open Graph description. Falls back to metaDescription.
+ogImage	string	No	URL of OG share image. Recommended ratio 1.91:1 (1200x630px).
+canonicalUrl	string	No	Explicit canonical URL. Auto-generated from slug if blank.
+noIndex	boolean	No	Exclude from search engine indexing. Default false.
+noFollow	boolean	No	Prevent crawling of outbound links. Default false.
+structuredData	JSON	No	Custom JSON-LD schema markup (e.g. TouristDestination, TouristAttraction).
+
+4.3  Media Block (Region)
+Field	Type	Required	Description / Notes
+bannerImage	string (URL)	No	Hero/banner image. Recommended ratio 16:9 (1920x1080px min). Displayed at full width on page headers.
+cardImage	string (URL)	No	Card/thumbnail image. Recommended ratio 3:2 (600x400px min). Used in listing grids and search results.
+ogImage	string (URL)	No	Social share preview image. Ratio 1.91:1 (1200x630px). Separate from bannerImage.
+galleryImages	string[]	No	Array of image URLs for photo gallery/carousel. No fixed limit but 8–16 recommended.
+altText	string	No	Alt text for bannerImage (accessibility + SEO).
+cardImageAlt	string	No	Alt text for cardImage.
+
+4.4  FAQs (Region)
+FAQs displayed on the region page. Typically cover local geography, weather, getting there, and accommodation.
+Field	Type	Required	Description / Notes
+question	string	Yes	The FAQ question text.
+answer	string	Yes	The answer body. Supports rich text / markdown.
+sortOrder	integer	No	Display order (ascending). Default 0.
+isActive	boolean	No	Show/hide this FAQ without deleting. Default true.
+
+Note: Regions do not carry group discounts. Discount configuration belongs to individual products.
+
+ 
+5. Destination (Trek)
+A Destination represents a named trekking route, trail, or geographic destination. It acts as a hub page that links to all associated Tours and Activities. It can also carry its own pricing and itinerary for direct bookings.
+
+5.1  Core Fields
+Field	Type	Required	Description / Notes
+id	uuid	Yes	Primary key.
+regionId	uuid FK	Yes	References Region.id.
+title	string	Yes	Trek/Destination name. 3–255 chars.
+slug	string	Yes	Unique URL slug.
+description	text	No	Full page description.
+difficulty	enum	Yes	Values: easy | moderate | hard | extreme.
+maxAltitude	integer	No	Max altitude in meters.
+durationDays	integer	No	Typical days to complete the trek.
+basePrice	decimal	No	Starting price per person. Decimal(10,2).
+status	enum	No	Values: draft | published | archived.
+highlights	string[]	No	Key experience highlights.
+inclusions	string[]	No	Included in price.
+exclusions	string[]	No	Not included.
+itinerary	JSON[]	No	Day-by-day plan: { day, title, description, accommodation, meals, altitude }.
+sortOrder	integer	No	Display order.
+createdAt	timestamp	—	Auto-set.
+updatedAt	timestamp	—	Auto-updated.
+deletedAt	timestamp	—	Soft delete.
+
+5.2  SEO Block (Destination)
+Field	Type	Required	Description / Notes
+metaTitle	string	No	SEO title tag. Max 60 chars. Falls back to entity title if empty.
+metaDescription	string	No	Meta description. Max 160 chars. Falls back to truncated description.
+metaKeywords	string[]	No	Array of keyword strings for keyword meta tag.
+ogTitle	string	No	Open Graph title. Falls back to metaTitle.
+ogDescription	string	No	Open Graph description. Falls back to metaDescription.
+ogImage	string	No	URL of OG share image. Recommended ratio 1.91:1 (1200x630px).
+canonicalUrl	string	No	Explicit canonical URL. Auto-generated from slug if blank.
+noIndex	boolean	No	Exclude from search engine indexing. Default false.
+noFollow	boolean	No	Prevent crawling of outbound links. Default false.
+structuredData	JSON	No	Custom JSON-LD schema markup (e.g. TouristDestination, TouristAttraction).
+
+5.3  Media Block (Destination)
+Field	Type	Required	Description / Notes
+bannerImage	string (URL)	No	Hero/banner image. Recommended ratio 16:9 (1920x1080px min). Displayed at full width on page headers.
+cardImage	string (URL)	No	Card/thumbnail image. Recommended ratio 3:2 (600x400px min). Used in listing grids and search results.
+ogImage	string (URL)	No	Social share preview image. Ratio 1.91:1 (1200x630px). Separate from bannerImage.
+galleryImages	string[]	No	Array of image URLs for photo gallery/carousel. No fixed limit but 8–16 recommended.
+altText	string	No	Alt text for bannerImage (accessibility + SEO).
+cardImageAlt	string	No	Alt text for cardImage.
+
+5.4  FAQs (Destination)
+FAQs displayed on the destination/trek page. Cover difficulty, best season, permits, fitness requirements, accommodation on route.
+Field	Type	Required	Description / Notes
+question	string	Yes	The FAQ question text.
+answer	string	Yes	The answer body. Supports rich text / markdown.
+sortOrder	integer	No	Display order (ascending). Default 0.
+isActive	boolean	No	Show/hide this FAQ without deleting. Default true.
+
+5.5  Group Discounts (Destination)
+Tiered group discounts applied when booking the trek directly (not through a tour product).
+Field	Type	Required	Description / Notes
+minPax	integer	Yes	Minimum number of people to qualify for this tier.
+maxPax	integer	No	Maximum people for this tier. Null = no upper limit.
+discountType	enum	Yes	Values: percentage | fixed_amount
+discountValue	decimal(10,2)	Yes	Percentage (0–100) or fixed currency amount.
+label	string	No	Human-friendly tier name (e.g. 'Family Group', 'School Group').
+isActive	boolean	No	Enable/disable tier without deleting. Default true.
+
+ 
+6. Tour
+A Tour is a fully guided, bookable product built around one or more destinations. Tours carry a detailed itinerary, inclusions/exclusions list, pricing, and group discount configuration.
+
+6.1  Core Fields
+Field	Type	Required	Description / Notes
+id	uuid	Yes	Primary key.
+regionId	uuid FK	Yes	References Region.id.
+destinationId	uuid FK	No	Optional. Links tour to a specific destination/trek page.
+title	string	Yes	Tour name. 3–255 chars.
+slug	string	Yes	Unique URL slug.
+description	text	No	Full tour description. Supports rich text.
+difficulty	enum	Yes	Values: easy | moderate | hard | extreme.
+durationDays	integer	Yes	Trip duration in days. Min 1.
+basePrice	decimal	No	Starting price per person. Decimal(10,2).
+status	enum	No	Values: draft | published | archived. Default draft.
+highlights	string[]	No	Array of key selling-point strings.
+inclusions	string[]	No	What is included in the tour price.
+exclusions	string[]	No	What is NOT included.
+itinerary	JSON[]	No	Array of day objects: { day, title, description, accommodation, meals }.
+sortOrder	integer	No	Display order.
+createdAt	timestamp	—	Auto-set.
+updatedAt	timestamp	—	Auto-updated.
+deletedAt	timestamp	—	Soft delete.
+
+6.2  SEO Block (Tour)
+Field	Type	Required	Description / Notes
+metaTitle	string	No	SEO title tag. Max 60 chars. Falls back to entity title if empty.
+metaDescription	string	No	Meta description. Max 160 chars. Falls back to truncated description.
+metaKeywords	string[]	No	Array of keyword strings for keyword meta tag.
+ogTitle	string	No	Open Graph title. Falls back to metaTitle.
+ogDescription	string	No	Open Graph description. Falls back to metaDescription.
+ogImage	string	No	URL of OG share image. Recommended ratio 1.91:1 (1200x630px).
+canonicalUrl	string	No	Explicit canonical URL. Auto-generated from slug if blank.
+noIndex	boolean	No	Exclude from search engine indexing. Default false.
+noFollow	boolean	No	Prevent crawling of outbound links. Default false.
+structuredData	JSON	No	Custom JSON-LD schema markup (e.g. TouristDestination, TouristAttraction).
+
+6.3  Media Block (Tour)
+Field	Type	Required	Description / Notes
+bannerImage	string (URL)	No	Hero/banner image. Recommended ratio 16:9 (1920x1080px min). Displayed at full width on page headers.
+cardImage	string (URL)	No	Card/thumbnail image. Recommended ratio 3:2 (600x400px min). Used in listing grids and search results.
+ogImage	string (URL)	No	Social share preview image. Ratio 1.91:1 (1200x630px). Separate from bannerImage.
+galleryImages	string[]	No	Array of image URLs for photo gallery/carousel. No fixed limit but 8–16 recommended.
+altText	string	No	Alt text for bannerImage (accessibility + SEO).
+cardImageAlt	string	No	Alt text for cardImage.
+
+6.4  FAQs (Tour)
+FAQs for the tour page. Cover booking process, what to bring, cancellation policy, departure guarantees, minimum age.
+Field	Type	Required	Description / Notes
+question	string	Yes	The FAQ question text.
+answer	string	Yes	The answer body. Supports rich text / markdown.
+sortOrder	integer	No	Display order (ascending). Default 0.
+isActive	boolean	No	Show/hide this FAQ without deleting. Default true.
+
+6.5  Group Discounts (Tour)
+Field	Type	Required	Description / Notes
+minPax	integer	Yes	Minimum number of people to qualify for this tier.
+maxPax	integer	No	Maximum people for this tier. Null = no upper limit.
+discountType	enum	Yes	Values: percentage | fixed_amount
+discountValue	decimal(10,2)	Yes	Percentage (0–100) or fixed currency amount.
+label	string	No	Human-friendly tier name (e.g. 'Family Group', 'School Group').
+isActive	boolean	No	Enable/disable tier without deleting. Default true.
+
+ 
+7. Activity
+Activities are bookable add-ons or standalone experiences. They can be linked to a Destination page, embedded in a Tour/product, or sold as independent offerings. The linkMode field controls how the activity is surfaced on the website.
+
+7.1  Core Fields
+Field	Type	Required	Description / Notes
+id	uuid	Yes	Primary key.
+regionId	uuid FK	Yes	References Region.id.
+title	string	Yes	Activity name. 3–255 chars.
+slug	string	Yes	Unique URL slug.
+type	string	Yes	Category: adventure | cultural | wildlife | wellness | food | other.
+description	text	No	Full description.
+basePrice	decimal	Yes	Price per person. Decimal(10,2). Min 0.
+durationHours	decimal	No	Activity duration in hours.
+status	enum	No	Values: draft | published | archived.
+linkMode	enum	No	Values: destination | product | standalone | multi. Default standalone.
+linkedTrekIds	uuid[]	No	Destination/Trek IDs this activity appears on.
+linkedTourIds	uuid[]	No	Tour IDs this activity is bundled with.
+sortOrder	integer	No	Display order.
+createdAt	timestamp	—	Auto-set.
+updatedAt	timestamp	—	Auto-updated.
+deletedAt	timestamp	—	Soft delete.
+
+7.2  Activity Link Modes
+The linkMode field determines how and where an activity is displayed on the website:
+
+linkMode	Behaviour	Admin Configuration
+standalone	Activity has its own dedicated page (/activities/paragliding-pokhara). Appears in activity listings and global search.	No linkedTrekIds or linkedTourIds required.
+destination	Activity is shown as a section on one or more Destination pages (linked via linkedTrekIds). No standalone URL generated.	Set linkedTrekIds[] to one or more Destination IDs.
+product	Activity is bundled within a Tour or Package. Shown in the product's inclusions section.	Set linkedTourIds[] or linked via TourActivity junction.
+multi	Activity appears both as standalone AND on linked destinations/products. Maximum visibility mode.	Set standalone=true, and populate both linkedTrekIds and/or linkedTourIds.
+
+7.3  SEO Block (Activity)
+Field	Type	Required	Description / Notes
+metaTitle	string	No	SEO title tag. Max 60 chars. Falls back to entity title if empty.
+metaDescription	string	No	Meta description. Max 160 chars. Falls back to truncated description.
+metaKeywords	string[]	No	Array of keyword strings for keyword meta tag.
+ogTitle	string	No	Open Graph title. Falls back to metaTitle.
+ogDescription	string	No	Open Graph description. Falls back to metaDescription.
+ogImage	string	No	URL of OG share image. Recommended ratio 1.91:1 (1200x630px).
+canonicalUrl	string	No	Explicit canonical URL. Auto-generated from slug if blank.
+noIndex	boolean	No	Exclude from search engine indexing. Default false.
+noFollow	boolean	No	Prevent crawling of outbound links. Default false.
+structuredData	JSON	No	Custom JSON-LD schema markup (e.g. TouristDestination, TouristAttraction).
+
+7.4  Media Block (Activity)
+Field	Type	Required	Description / Notes
+bannerImage	string (URL)	No	Hero/banner image. Recommended ratio 16:9 (1920x1080px min). Displayed at full width on page headers.
+cardImage	string (URL)	No	Card/thumbnail image. Recommended ratio 3:2 (600x400px min). Used in listing grids and search results.
+ogImage	string (URL)	No	Social share preview image. Ratio 1.91:1 (1200x630px). Separate from bannerImage.
+galleryImages	string[]	No	Array of image URLs for photo gallery/carousel. No fixed limit but 8–16 recommended.
+altText	string	No	Alt text for bannerImage (accessibility + SEO).
+cardImageAlt	string	No	Alt text for cardImage.
+
+7.5  FAQs (Activity)
+FAQs for the activity. Cover duration, fitness level, equipment provided, cancellation, age limits, safety.
+Field	Type	Required	Description / Notes
+question	string	Yes	The FAQ question text.
+answer	string	Yes	The answer body. Supports rich text / markdown.
+sortOrder	integer	No	Display order (ascending). Default 0.
+isActive	boolean	No	Show/hide this FAQ without deleting. Default true.
+
+7.6  Group Discounts (Activity)
+Field	Type	Required	Description / Notes
+minPax	integer	Yes	Minimum number of people to qualify for this tier.
+maxPax	integer	No	Maximum people for this tier. Null = no upper limit.
+discountType	enum	Yes	Values: percentage | fixed_amount
+discountValue	decimal(10,2)	Yes	Percentage (0–100) or fixed currency amount.
+label	string	No	Human-friendly tier name (e.g. 'Family Group', 'School Group').
+isActive	boolean	No	Enable/disable tier without deleting. Default true.
+
+ 
+8. Package
+A Package is a curated multi-destination product — for example, the Golden Triangle Nepal package might include Kathmandu, Pokhara, and Chitwan as three linked destinations, each with custom names, descriptions, and day allocations, combined under a single custom price, itinerary, and group discount structure.
+
+Tip: Packages operate independently of the region hierarchy. A single package can span multiple regions and countries. The destinations within a package are linked via the package_destinations join table, which carries per-destination customisation fields.
+
+8.1  Core Package Fields
+Field	Type	Required	Description / Notes
+id	uuid	Yes	Primary key.
+title	string	Yes	Package name. 3–255 chars. (e.g. Golden Triangle Nepal)
+slug	string	Yes	Unique URL slug.
+description	text	No	Full package description.
+totalDays	integer	No	Auto-computed OR manually set total trip duration.
+basePrice	decimal(10,2)	No	Custom package price (overrides sum of individual product prices).
+status	enum	No	Values: draft | published | archived. Default draft.
+destinations	relation	No	Many-to-many via package_destinations join table (see below).
+regionIds	uuid[]	No	Optional region tags for filtering.
+highlights	string[]	No	Key selling points.
+inclusions	string[]	No	What is included.
+exclusions	string[]	No	What is not included.
+itinerary	JSON[]	No	Combined day-by-day plan across all linked destinations.
+sortOrder	integer	No	Display order.
+createdAt	timestamp	—	Auto-set.
+updatedAt	timestamp	—	Auto-updated.
+deletedAt	timestamp	—	Soft delete.
+
+8.2  Package Destinations Join Table (package_destinations)
+This table links destinations to a package and allows full customisation of each destination's presentation within the package context. For example, 'Pokhara' might be labelled 'Lakeside Pokhara Experience' within the Golden Triangle package.
+
+Field	Type	Required	Description / Notes
+id	uuid	Yes	Primary key for the join record.
+packageId	uuid FK	Yes	References Package.id.
+destinationId	uuid FK	Yes	References Destination (Trek).id.
+customName	string	No	Override destination name within this package (e.g. 'Kathmandu City Tour').
+customDescription	text	No	Override description shown inside the package itinerary for this destination.
+durationDays	integer	No	Days allocated to this destination within the package.
+sortOrder	integer	No	Display order of destinations within the package.
+
+Package Example	Linked Destinations	Custom Package Price
+Golden Triangle Nepal	1. Kathmandu (3 days)  2. Pokhara (3 days)  3. Chitwan (2 days)	$1,200/person (custom price, overrides sum of individual trek prices)
+Annapurna & Everest Combo	1. Annapurna Base Camp (10 days)  2. Everest Base Camp (14 days)	$3,500/person with full itinerary and combined inclusions list
+
+8.3  SEO Block (Package)
+Field	Type	Required	Description / Notes
+metaTitle	string	No	SEO title tag. Max 60 chars. Falls back to entity title if empty.
+metaDescription	string	No	Meta description. Max 160 chars. Falls back to truncated description.
+metaKeywords	string[]	No	Array of keyword strings for keyword meta tag.
+ogTitle	string	No	Open Graph title. Falls back to metaTitle.
+ogDescription	string	No	Open Graph description. Falls back to metaDescription.
+ogImage	string	No	URL of OG share image. Recommended ratio 1.91:1 (1200x630px).
+canonicalUrl	string	No	Explicit canonical URL. Auto-generated from slug if blank.
+noIndex	boolean	No	Exclude from search engine indexing. Default false.
+noFollow	boolean	No	Prevent crawling of outbound links. Default false.
+structuredData	JSON	No	Custom JSON-LD schema markup (e.g. TouristDestination, TouristAttraction).
+
+8.4  Media Block (Package)
+Field	Type	Required	Description / Notes
+bannerImage	string (URL)	No	Hero/banner image. Recommended ratio 16:9 (1920x1080px min). Displayed at full width on page headers.
+cardImage	string (URL)	No	Card/thumbnail image. Recommended ratio 3:2 (600x400px min). Used in listing grids and search results.
+ogImage	string (URL)	No	Social share preview image. Ratio 1.91:1 (1200x630px). Separate from bannerImage.
+galleryImages	string[]	No	Array of image URLs for photo gallery/carousel. No fixed limit but 8–16 recommended.
+altText	string	No	Alt text for bannerImage (accessibility + SEO).
+cardImageAlt	string	No	Alt text for cardImage.
+
+8.5  FAQs (Package)
+FAQs for the package. Cover total duration, what is included, how destinations are sequenced, transport between destinations, booking deposit, cancellation.
+Field	Type	Required	Description / Notes
+question	string	Yes	The FAQ question text.
+answer	string	Yes	The answer body. Supports rich text / markdown.
+sortOrder	integer	No	Display order (ascending). Default 0.
+isActive	boolean	No	Show/hide this FAQ without deleting. Default true.
+
+8.6  Group Discounts (Package)
+Group discounts for packages apply to the custom package basePrice. This allows operators to set attractive rates for school groups, corporate teams, or large family bookings.
+Field	Type	Required	Description / Notes
+minPax	integer	Yes	Minimum number of people to qualify for this tier.
+maxPax	integer	No	Maximum people for this tier. Null = no upper limit.
+discountType	enum	Yes	Values: percentage | fixed_amount
+discountValue	decimal(10,2)	Yes	Percentage (0–100) or fixed currency amount.
+label	string	No	Human-friendly tier name (e.g. 'Family Group', 'School Group').
+isActive	boolean	No	Enable/disable tier without deleting. Default true.
+
+ 
+9. Entity Feature Matrix
+Quick reference: which blocks and features apply to each entity.
+
+Feature	Country	Region	Destination	Tour	Activity	Package	Notes
+SEO Settings	✓	✓	✓	✓	✓	✓	All entities
+Banner Image 16:9	✓	✓	✓	✓	✓	✓	All entities
+Card Image 3:2	✓	✓	✓	✓	✓	✓	All entities
+OG Image 1.91:1	✓	✓	✓	✓	✓	✓	All entities
+Gallery Images	—	✓	✓	✓	✓	✓	Not on Country
+FAQs	✓	✓	✓	✓	✓	✓	All entities
+Group Discounts	—	—	✓	✓	✓	✓	Products only
+Itinerary (days[])	—	—	✓	✓	—	✓	Trek/Tour/Package
+Highlights list	—	—	✓	✓	—	✓	Products
+Inclusions/Exclusions	—	—	✓	✓	—	✓	Products
+Base Price	—	—	✓	✓	✓	✓	Products
+Activity Link Mode	—	—	—	—	✓	—	Activity only
+Multi-Destination	—	—	—	—	—	✓	Package only
+Difficulty	—	—	✓	✓	—	—	Trek/Tour
+Max Altitude	—	—	✓	✓	—	—	Trek/Tour
+Duration (days)	—	—	✓	✓	—	✓	Trek/Tour/Package
+Duration (hours)	—	—	—	—	✓	—	Activity only
+
+ 
+10. Database Implementation Notes
+10.1  SEO & Media Storage Strategy
+Option A (recommended for flexibility): Store SEO and media as embedded JSON columns on each entity table. This avoids joins and simplifies API responses.
+•	seo JSON column on each entity table: { metaTitle, metaDescription, metaKeywords, ogTitle, ogDescription, ogImage, canonicalUrl, noIndex, noFollow, structuredData }
+•	media JSON column: { bannerImage, cardImage, ogImage, galleryImages, altText, cardImageAlt }
+
+Option B (recommended for shared media management): Polymorphic seo_settings and media_assets tables with entityType and entityId columns, allowing a centralised media library with reuse across entities.
+
+10.2  FAQs Table
+Recommended as a separate polymorphic table for query flexibility and ordering:
+•	faqs ( id UUID PK, entityType VARCHAR 50, entityId UUID, question TEXT, answer TEXT, sortOrder INT DEFAULT 0, isActive BOOLEAN DEFAULT true, createdAt TIMESTAMP, updatedAt TIMESTAMP )
+•	Index on (entityType, entityId, isActive, sortOrder) for efficient page queries.
+
+10.3  Group Discounts Table
+Separate table with polymorphic entity reference:
+•	group_discounts ( id UUID PK, entityType VARCHAR 50, entityId UUID, minPax INT, maxPax INT NULLABLE, discountType VARCHAR 20, discountValue DECIMAL(10,2), label VARCHAR 100 NULLABLE, isActive BOOLEAN DEFAULT true, createdAt TIMESTAMP, updatedAt TIMESTAMP )
+•	Constraint: no overlapping pax ranges per (entityType, entityId) combination.
+
+10.4  Package Destinations Join Table
+•	package_destinations ( id UUID PK, packageId UUID FK, destinationId UUID FK, customName VARCHAR 255 NULLABLE, customDescription TEXT NULLABLE, durationDays INT NULLABLE, sortOrder INT DEFAULT 0 )
+•	Unique constraint on (packageId, destinationId) to prevent duplicate destination entries within a package.
+
+10.5  Activity Link Tables
+•	activity_treks ( activityId UUID FK, trekId UUID FK, sortOrder INT ) — links activities to destination pages
+•	activity_tours ( activityId UUID FK, tourId UUID FK, sortOrder INT ) — links activities to tour products
+•	Both are junction tables with composite PK on (activityId, trekId) and (activityId, tourId) respectively.
+
+ 
+11. Admin Panel Form Guidelines
+11.1  SEO Section (All Entity Forms)
+•	Collapsible 'SEO Settings' panel, collapsed by default
+•	Live character counter on metaTitle (target: under 60 chars, warn at 55, error at 65)
+•	Live character counter on metaDescription (target: under 160 chars, warn at 150, error at 170)
+•	Google SERP preview snippet rendered live as user types
+•	ogImage uploader with 1.91:1 crop enforcer; fallback to bannerImage if blank
+
+11.2  Media Upload Section (All Entity Forms)
+•	bannerImage: drag-and-drop uploader with 16:9 crop enforcer (1920×1080px recommended label)
+•	cardImage: drag-and-drop uploader with 3:2 crop enforcer (600×400px recommended label)
+•	ogImage: drag-and-drop with 1.91:1 crop enforcer (1200×630px recommended label)
+•	galleryImages: multi-upload with drag-to-reorder; preview grid shown below uploader
+•	All image fields show current image preview and 'Remove' button when populated
+
+11.3  FAQ Section (All Entity Forms)
+•	Drag-to-reorder FAQ list (updates sortOrder automatically)
+•	'Add FAQ' button appends blank question/answer pair
+•	Each FAQ row has: question (text input), answer (rich text textarea), active toggle, delete button
+•	Minimum 0 FAQs; no maximum enforced (but recommend under 20 for readability)
+
+11.4  Group Discount Section (Products Only)
+•	'Add Discount Tier' button appends a new tier row
+•	Each tier row: Label (optional), Min Pax (number), Max Pax (number or 'no limit' toggle), Discount Type (select: % | fixed), Value (number), Active toggle, Delete
+•	Real-time validation: overlap detection between tiers, warnings shown inline
+•	Preview table shows computed price for a sample base price at each tier
+
+11.5  Package Destination Linking
+•	Multi-select destination picker with search (queries destinations API)
+•	Each linked destination card shows: default name, override name input, override description textarea, days input, drag handle for reorder
+•	'Total Days' field auto-sums destination durationDays; operator can override
+•	'Custom Package Price' field overrides sum of individual destination prices
+
+11.6  Activity Link Mode
+•	linkMode select: standalone | destination | product | multi
+•	When destination or multi is selected: multi-select destination picker appears (linkedTrekIds)
+•	When product or multi is selected: multi-select tour picker appears (linkedTourIds)
+•	When standalone or multi: activity gets its own public URL (slug is shown)
+
+ 
+12. DTO Update Summary
+The following DTO changes are required to implement the advanced schema across the API layer.
+
+DTO	New Fields to Add	Notes
+CreateCountryDto	seo (SeoSettingsDto), media (MediaDto), faqs (FaqDto[])	SEO and media are optional nested objects.
+CreateRegionDto	seo, media, faqs, sortOrder	sortOrder for listing order control.
+CreateTrekDto	seo, media, faqs, groupDiscounts, basePrice, durationDays, highlights, inclusions, exclusions, itinerary, sortOrder	Full product fields.
+CreateTourDto	seo, media, faqs, groupDiscounts, destinationId (optional), highlights, inclusions, exclusions, itinerary, sortOrder	destinationId links tour to destination page.
+CreateActivityDto	seo, media, faqs, groupDiscounts, linkMode, linkedTrekIds, linkedTourIds, durationHours, sortOrder	linkMode drives website display logic.
+CreatePackageDto	seo, media, faqs, groupDiscounts, destinations (PackageDestinationDto[]), basePrice, totalDays, highlights, inclusions, exclusions, itinerary, sortOrder	destinations replaces simple regionIds[] for package destination linking.
+PackageDestinationDto	destinationId, customName, customDescription, durationDays, sortOrder	New DTO for package_destinations join data.
+GroupDiscountDto	minPax, maxPax, discountType, discountValue, label, isActive	Shared DTO used by all product entities.
+SeoSettingsDto	metaTitle, metaDescription, metaKeywords, ogTitle, ogDescription, ogImage, canonicalUrl, noIndex, noFollow, structuredData	Shared DTO used by all entities.
+MediaDto	bannerImage, cardImage, ogImage, galleryImages, altText, cardImageAlt	Shared DTO used by all entities.
+FaqDto	question, answer, sortOrder, isActive	Shared DTO used by all entities.
+
+Advanced CMS Schema v2.0  ·  Travel Platform  ·  Confidential

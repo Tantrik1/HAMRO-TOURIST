@@ -1,0 +1,1367 @@
+bash
+
+DARK=$(cat /tmp/logo_dark_b64.txt)
+WHITE=$(cat /tmp/logo_white_b64.txt)
+
+cat > /mnt/user-data/outputs/hamrotask-landing.html << 'HTMLEOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hamro Task — Run Your Travel Agency on Autopilot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --orange: #E8431A;
+  --orange-light: #FF5C2E;
+  --orange-pale: #FFF0EB;
+  --orange-mid: #FF7A52;
+  --cobalt: #2B3990;
+  --cobalt-light: #3D4EAA;
+  --cobalt-pale: #ECEFFE;
+  --cobalt-dark: #1A2460;
+  --white: #FFFFFF;
+  --off-white: #F8F6F3;
+  --text: #0F0F0F;
+  --muted: #6A6A72;
+  --border: rgba(43,57,144,0.12);
+  --border-light: rgba(255,255,255,0.14);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: 'Barlow', sans-serif; background: var(--off-white); color: var(--text); overflow-x: hidden; }
+
+/* NAV */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  padding: 1.2rem 5%; display: flex; align-items: center; justify-content: space-between;
+  transition: all 0.4s ease;
+}
+nav.scrolled {
+  background: rgba(27,36,96,0.95); backdrop-filter: blur(20px);
+  padding: 0.8rem 5%; border-bottom: 1px solid var(--border-light);
+  box-shadow: 0 4px 30px rgba(0,0,0,0.25);
+}
+.nav-logo img { height: 44px; width: auto; }
+.nav-links { display: flex; align-items: center; gap: 1.8rem; }
+.nav-links a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 400; transition: color 0.3s; letter-spacing: 0.01em; }
+.nav-links a:hover { color: var(--white); }
+.nav-cta { background: var(--orange) !important; color: var(--white) !important; padding: 0.55rem 1.4rem; border-radius: 6px; font-weight: 600 !important; transition: all 0.3s !important; }
+.nav-cta:hover { background: var(--orange-light) !important; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(232,67,26,0.4); }
+
+/* HERO — S1 */
+.hero {
+  min-height: 100vh; background: var(--cobalt-dark); position: relative;
+  display: flex; align-items: center; overflow: hidden;
+}
+.hero-bg-pattern {
+  position: absolute; inset: 0; opacity: 0.06;
+  background-image: repeating-linear-gradient(45deg, var(--white) 0, var(--white) 1px, transparent 0, transparent 50%);
+  background-size: 28px 28px;
+}
+.hero-glow {
+  position: absolute; top: -10%; right: -5%; width: 55%; height: 80%;
+  background: radial-gradient(ellipse, rgba(232,67,26,0.22) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-glow2 {
+  position: absolute; bottom: -20%; left: -10%; width: 50%; height: 70%;
+  background: radial-gradient(ellipse, rgba(43,57,144,0.5) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-inner {
+  position: relative; z-index: 2; max-width: 1200px; margin: 0 auto;
+  padding: 9rem 5% 5rem; width: 100%; display: grid;
+  grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  background: rgba(232,67,26,0.18); border: 1px solid rgba(232,67,26,0.3);
+  padding: 0.35rem 1rem; border-radius: 100px; margin-bottom: 1.8rem;
+  font-size: 0.78rem; font-weight: 600; color: var(--orange-mid);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  opacity: 0; animation: slideUp 0.7s ease 0.1s forwards;
+}
+.eyebrow-dot { width: 6px; height: 6px; background: var(--orange); border-radius: 50%; animation: pulse 2s ease infinite; }
+@keyframes pulse { 0%,100% { opacity:1; transform: scale(1); } 50% { opacity:0.4; transform: scale(0.8); } }
+.hero-h1 {
+  font-family: 'Barlow Condensed', sans-serif; font-size: clamp(3.2rem, 5.5vw, 5.5rem);
+  font-weight: 900; line-height: 1.0; color: var(--white); margin-bottom: 1.5rem;
+  letter-spacing: -0.01em; text-transform: uppercase;
+  opacity: 0; animation: slideUp 0.7s ease 0.25s forwards;
+}
+.hero-h1 .accent { color: var(--orange); font-style: italic; }
+.hero-h1 .underline-word { position: relative; display: inline-block; }
+.hero-h1 .underline-word::after {
+  content:''; position: absolute; bottom: 2px; left: 0; right: 0; height: 4px;
+  background: var(--orange); border-radius: 2px;
+}
+.hero-sub {
+  font-size: 1.1rem; color: rgba(255,255,255,0.6); line-height: 1.7;
+  max-width: 480px; font-weight: 300; margin-bottom: 2.5rem;
+  opacity: 0; animation: slideUp 0.7s ease 0.4s forwards;
+}
+.hero-actions {
+  display: flex; gap: 1rem; flex-wrap: wrap;
+  opacity: 0; animation: slideUp 0.7s ease 0.55s forwards;
+}
+.btn-primary {
+  background: var(--orange); color: var(--white); padding: 1rem 2.2rem;
+  border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 1rem;
+  border: none; cursor: pointer; transition: all 0.3s; display: inline-block;
+  font-family: 'Barlow', sans-serif; letter-spacing: 0.02em;
+  box-shadow: 0 4px 20px rgba(232,67,26,0.4);
+}
+.btn-primary:hover { background: var(--orange-light); transform: translateY(-2px); box-shadow: 0 10px 30px rgba(232,67,26,0.5); }
+.btn-ghost {
+  color: var(--white); padding: 1rem 2rem; border-radius: 8px; text-decoration: none;
+  font-weight: 500; font-size: 1rem; border: 1.5px solid rgba(255,255,255,0.25);
+  transition: all 0.3s; display: inline-block; font-family: 'Barlow', sans-serif;
+}
+.btn-ghost:hover { border-color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.06); }
+.hero-trust {
+  display: flex; gap: 2rem; margin-top: 2.5rem;
+  opacity: 0; animation: slideUp 0.7s ease 0.7s forwards;
+}
+.trust-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: rgba(255,255,255,0.45); }
+.trust-icon { color: var(--orange); font-size: 0.9rem; }
+
+/* Hero right — mockup */
+.hero-right { opacity: 0; animation: slideRight 0.9s ease 0.5s forwards; }
+@keyframes slideRight { from { opacity:0; transform: translateX(40px); } to { opacity:1; transform: translateX(0); } }
+.hero-card {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px; padding: 1.8rem; backdrop-filter: blur(20px);
+}
+.hcard-label { font-size: 0.68rem; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 1rem; }
+.hcard-title { font-family: 'Barlow Condensed', sans-serif; font-size: 1.6rem; color: var(--white); font-weight: 700; text-transform: uppercase; margin-bottom: 0.25rem; }
+.hcard-sub { font-size: 0.78rem; color: rgba(255,255,255,0.45); margin-bottom: 1.5rem; }
+.hcard-price { font-family: 'DM Mono', monospace; font-size: 2.4rem; color: var(--orange); font-weight: 500; }
+.hcard-tags { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+.hcard-tag { background: rgba(232,67,26,0.15); color: var(--orange-mid); padding: 0.25rem 0.8rem; border-radius: 100px; font-size: 0.7rem; font-weight: 500; border: 1px solid rgba(232,67,26,0.2); }
+.hcard-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 1.5rem; }
+.hstat { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 0.9rem; text-align: center; }
+.hstat-val { font-family: 'DM Mono', monospace; font-size: 1.2rem; color: var(--white); font-weight: 500; }
+.hstat-label { font-size: 0.65rem; color: rgba(255,255,255,0.3); margin-top: 0.2rem; }
+.hcard-crm { margin-top: 1.5rem; }
+.crm-title { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); margin-bottom: 0.75rem; }
+.crm-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.crm-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.crm-name { font-size: 0.8rem; color: rgba(255,255,255,0.65); flex: 1; }
+.crm-badge { font-size: 0.68rem; padding: 0.2rem 0.6rem; border-radius: 100px; font-weight: 500; }
+.badge-new { background: rgba(59,130,246,0.2); color: #60a5fa; }
+.badge-hot { background: rgba(232,67,26,0.25); color: var(--orange-mid); }
+.badge-won { background: rgba(34,197,94,0.2); color: #4ade80; }
+
+@keyframes slideUp { from { opacity:0; transform: translateY(30px); } to { opacity:1; transform: translateY(0); } }
+
+/* TICKER — S5 */
+.ticker { background: var(--orange); padding: 0.9rem 0; overflow: hidden; }
+.ticker-track { display: flex; gap: 3rem; white-space: nowrap; animation: tickScroll 35s linear infinite; }
+.ticker-track2 { animation-direction: reverse; }
+.ticker-item { font-size: 0.8rem; font-weight: 600; color: var(--white); display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.05em; }
+.ticker-sep { width: 4px; height: 4px; background: rgba(255,255,255,0.5); border-radius: 50%; }
+@keyframes tickScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* REVEAL */
+.reveal { opacity: 0; transform: translateY(50px); transition: opacity 0.75s ease, transform 0.75s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+
+/* SHARED SECTION STYLES */
+.section-inner { max-width: 1200px; margin: 0 auto; padding: 0 5%; }
+.section-pad { padding: 7rem 0; }
+.section-label {
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--orange); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+}
+.section-label::before { content:''; width: 20px; height: 2px; background: var(--orange); display: inline-block; }
+h2.display {
+  font-family: 'Barlow Condensed', sans-serif; font-size: clamp(2.4rem, 4.5vw, 4rem);
+  font-weight: 900; line-height: 1.08; text-transform: uppercase; letter-spacing: -0.01em; color: var(--cobalt-dark);
+}
+h2.display.light { color: var(--white); }
+h2.display em { font-style: italic; color: var(--orange); }
+
+/* S2: PROBLEM */
+.problem { background: var(--cobalt-dark); padding: 7rem 0; }
+.problem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center; margin-top: 4rem; }
+.pain-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+.pain-card { border-left: 3px solid var(--orange); padding: 1.2rem 1.5rem; background: rgba(255,255,255,0.03); border-radius: 0 12px 12px 0; transition: all 0.3s; }
+.pain-card:hover { background: rgba(232,67,26,0.07); transform: translateX(4px); }
+.pain-num { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--orange); letter-spacing: 0.12em; margin-bottom: 0.4rem; }
+.pain-title { font-family: 'Barlow Condensed', sans-serif; font-size: 1.2rem; font-weight: 700; color: var(--white); text-transform: uppercase; margin-bottom: 0.4rem; }
+.pain-desc { font-size: 0.88rem; color: rgba(255,255,255,0.5); line-height: 1.6; font-weight: 300; }
+.prob-visual { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 1.8rem; }
+.wa-header { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.25); margin-bottom: 1rem; }
+.wa-thread { display: flex; flex-direction: column; gap: 0.6rem; }
+.wa-msg { max-width: 80%; padding: 0.65rem 1rem; font-size: 0.8rem; line-height: 1.45; }
+.wa-msg.them { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.65); align-self: flex-start; border-radius: 4px 12px 12px 12px; }
+.wa-msg.me { background: rgba(43,57,144,0.35); color: rgba(255,255,255,0.75); align-self: flex-end; border-radius: 12px 4px 12px 12px; }
+.wa-chaos { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.06); }
+.chaos-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,80,80,0.5); margin-bottom: 0.6rem; }
+.chaos-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.chaos-tag { background: rgba(255,50,50,0.1); color: rgba(255,100,90,0.7); padding: 0.25rem 0.7rem; border-radius: 100px; font-size: 0.7rem; border: 1px solid rgba(255,50,50,0.15); }
+
+/* S3: COST OF WAITING */
+.cost { background: var(--off-white); padding: 7rem 0; }
+.cost-center { text-align: center; }
+.cost-toggles { display: flex; background: rgba(43,57,144,0.08); border-radius: 10px; width: fit-content; margin: 2.5rem auto 0; overflow: hidden; }
+.cost-btn { padding: 0.6rem 1.5rem; font-size: 0.85rem; border: none; background: transparent; cursor: pointer; color: var(--muted); font-family: 'Barlow', sans-serif; font-weight: 600; transition: all 0.3s; letter-spacing: 0.02em; }
+.cost-btn.active { background: var(--cobalt); color: var(--white); border-radius: 8px; }
+.cost-amount-wrap { margin: 2.5rem auto; }
+.cost-prefix { font-size: 1.1rem; color: var(--muted); margin-bottom: 0.5rem; }
+.cost-amount { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(4rem, 9vw, 8rem); font-weight: 900; color: var(--orange); line-height: 1; letter-spacing: -0.02em; }
+.cost-suffix { font-size: 0.9rem; color: var(--muted); margin-top: 0.5rem; }
+.cost-note { font-size: 0.8rem; color: var(--muted); margin-top: 1.5rem; max-width: 400px; margin-left: auto; margin-right: auto; }
+.cost-breakdown { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 3.5rem; max-width: 700px; margin-left: auto; margin-right: auto; }
+.cbreak { background: var(--white); border-radius: 16px; padding: 1.5rem; text-align: center; border: 1px solid var(--border); }
+.cbreak-val { font-family: 'DM Mono', monospace; font-size: 1.4rem; color: var(--cobalt); font-weight: 500; }
+.cbreak-label { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; }
+
+/* S4: THE SHIFT */
+.shift { background: var(--cobalt); padding: 7rem 0; }
+.shift-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; margin-top: 4rem; }
+.comp-col { border-radius: 20px; padding: 2rem; }
+.comp-before { background: rgba(255,50,50,0.06); border: 1px solid rgba(255,50,50,0.15); }
+.comp-after { background: rgba(232,67,26,0.1); border: 2px solid rgba(232,67,26,0.3); }
+.comp-head { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 1.5rem; }
+.comp-head.bad { color: rgba(255,100,90,0.8); }
+.comp-head.good { color: var(--orange-mid); }
+.comp-row { display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem; }
+.comp-ico { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; margin-top: 2px; }
+.comp-ico.bad { background: rgba(255,50,50,0.18); }
+.comp-ico.good { background: rgba(232,67,26,0.2); }
+.comp-text { font-size: 0.88rem; color: rgba(255,255,255,0.6); line-height: 1.5; font-weight: 300; }
+
+/* S6: PRODUCT TABS */
+.product { background: var(--white); padding: 7rem 0; }
+.tab-nav { display: flex; gap: 0; background: var(--off-white); border-radius: 12px; width: fit-content; margin: 3rem 0 0; overflow: hidden; border: 1px solid var(--border); }
+.tab-btn { padding: 0.75rem 1.5rem; font-size: 0.88rem; border: none; background: transparent; cursor: pointer; color: var(--muted); font-family: 'Barlow', sans-serif; font-weight: 600; transition: all 0.3s; white-space: nowrap; }
+.tab-btn.active { background: var(--cobalt); color: var(--white); border-radius: 10px; }
+.tab-content { margin-top: 2.5rem; }
+.tab-panel { display: none; }
+.tab-panel.active { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+.tab-panel-title { font-family: 'Barlow Condensed', sans-serif; font-size: 2rem; font-weight: 800; color: var(--cobalt-dark); text-transform: uppercase; margin-bottom: 1rem; }
+.tab-panel-desc { font-size: 1rem; color: var(--muted); line-height: 1.7; font-weight: 300; }
+.tab-features { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.tab-feat { display: flex; align-items: center; gap: 0.75rem; font-size: 0.9rem; color: var(--text); }
+.tab-feat::before { content:'→'; color: var(--orange); font-weight: 700; flex-shrink: 0; }
+.tab-visual { background: var(--off-white); border-radius: 20px; padding: 2rem; border: 1px solid var(--border); min-height: 280px; display: flex; align-items: center; justify-content: center; }
+.tab-visual-inner { text-align: center; }
+.tab-icon { font-size: 4rem; margin-bottom: 1rem; }
+.tab-visual-title { font-family: 'Barlow Condensed', sans-serif; font-size: 1.3rem; font-weight: 700; color: var(--cobalt-dark); text-transform: uppercase; }
+.tab-visual-sub { font-size: 0.82rem; color: var(--muted); margin-top: 0.5rem; }
+
+/* S7: FEATURES GRID */
+.features { background: var(--off-white); padding: 7rem 0; }
+.feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 4rem; }
+.feat-card {
+  background: var(--white); border-radius: 20px; padding: 2rem;
+  border: 1px solid var(--border); transition: all 0.35s;
+  position: relative; overflow: hidden;
+}
+.feat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--orange); transform: scaleX(0); transition: transform 0.3s;
+  transform-origin: left;
+}
+.feat-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(43,57,144,0.1); }
+.feat-card:hover::before { transform: scaleX(1); }
+.feat-card:nth-child(2):hover::before, .feat-card:nth-child(5):hover::before, .feat-card:nth-child(8):hover::before { background: var(--cobalt); }
+.feat-icon { font-size: 2rem; margin-bottom: 1.2rem; display: block; }
+.feat-title { font-family: 'Barlow Condensed', sans-serif; font-size: 1.25rem; font-weight: 800; color: var(--cobalt-dark); text-transform: uppercase; margin-bottom: 0.6rem; letter-spacing: 0.01em; }
+.feat-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.6; font-weight: 300; }
+
+/* S8: TESTIMONIALS */
+.testimonials { background: var(--cobalt-dark); padding: 7rem 0; }
+.testi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 4rem; }
+.testi-card {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 20px; padding: 2rem; transition: all 0.35s;
+}
+.testi-card:hover { background: rgba(232,67,26,0.06); border-color: rgba(232,67,26,0.2); transform: translateY(-4px); }
+.testi-stars { color: var(--orange); font-size: 1rem; margin-bottom: 1.2rem; letter-spacing: 0.1em; }
+.testi-quote { font-size: 0.95rem; color: rgba(255,255,255,0.7); line-height: 1.7; font-weight: 300; font-style: italic; margin-bottom: 1.5rem; }
+.testi-meta { display: flex; align-items: center; gap: 0.75rem; }
+.testi-avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1rem; color: var(--white); flex-shrink: 0; }
+.testi-name { font-weight: 600; font-size: 0.88rem; color: var(--white); }
+.testi-agency { font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-top: 0.1rem; }
+
+/* S9: FOMO LIVE */
+.fomo { background: var(--off-white); padding: 7rem 0; }
+.fomo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center; }
+.fomo-list { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 2rem; }
+.fomo-item {
+  display: flex; align-items: center; gap: 1rem; background: var(--white);
+  border-radius: 12px; padding: 0.85rem 1.2rem; border: 1px solid var(--border);
+  font-size: 0.88rem; color: var(--text); opacity: 0; transform: translateX(-20px);
+}
+.fomo-item.appeared { opacity: 1; transform: translateX(0); transition: all 0.5s ease; }
+.fomo-item-dot { width: 8px; height: 8px; background: var(--orange); border-radius: 50%; flex-shrink: 0; animation: pulse 2s ease infinite; }
+.fomo-time { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); margin-left: auto; }
+.fomo-counter-block { text-align: center; background: var(--cobalt-dark); border-radius: 24px; padding: 3rem 2rem; }
+.fomo-big { font-family: 'Barlow Condensed', sans-serif; font-size: 5rem; font-weight: 900; color: var(--white); line-height: 1; letter-spacing: -0.02em; }
+.fomo-big span { color: var(--orange); }
+.fomo-big-label { font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-top: 0.75rem; }
+.fomo-progress { margin-top: 2rem; }
+.fomo-bar-label { display: flex; justify-content: space-between; font-size: 0.78rem; color: rgba(255,255,255,0.4); margin-bottom: 0.5rem; }
+.fomo-bar-track { background: rgba(255,255,255,0.08); border-radius: 100px; height: 8px; overflow: hidden; }
+.fomo-bar-fill { height: 100%; background: var(--orange); border-radius: 100px; width: 61%; transition: width 2s ease; }
+
+/* S10: 10-MIN TIMELINE */
+.timeline { background: var(--white); padding: 7rem 0; }
+.timeline-steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; margin-top: 4rem; position: relative; }
+.timeline-steps::before {
+  content: ''; position: absolute; top: 28px; left: 10%; right: 10%; height: 2px;
+  background: linear-gradient(90deg, var(--orange), var(--cobalt)); z-index: 0;
+}
+.tstep { display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; z-index: 1; padding: 0 0.5rem; }
+.tstep-circle {
+  width: 56px; height: 56px; border-radius: 50%; background: var(--white); border: 2.5px solid var(--orange);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Barlow Condensed', sans-serif; font-size: 1.2rem; font-weight: 900; color: var(--orange);
+  margin-bottom: 1.2rem; transition: all 0.3s; flex-shrink: 0;
+}
+.tstep:hover .tstep-circle { background: var(--orange); color: var(--white); transform: scale(1.1); }
+.tstep-title { font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; font-weight: 800; text-transform: uppercase; color: var(--cobalt-dark); margin-bottom: 0.4rem; letter-spacing: 0.02em; }
+.tstep-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.5; font-weight: 300; }
+
+/* S11: GEOGRAPHY DEMO */
+.geography { background: var(--cobalt-dark); padding: 7rem 0; }
+.geo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; margin-top: 4rem; }
+.geo-regions { display: flex; flex-direction: column; gap: 1rem; }
+.geo-region {
+  display: flex; align-items: center; gap: 1rem; background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 1.2rem 1.5rem;
+  cursor: pointer; transition: all 0.3s;
+}
+.geo-region:hover, .geo-region.active { background: rgba(232,67,26,0.1); border-color: rgba(232,67,26,0.3); }
+.geo-flag { font-size: 1.5rem; flex-shrink: 0; }
+.geo-name { font-family: 'Barlow Condensed', sans-serif; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; color: var(--white); }
+.geo-count { font-size: 0.78rem; color: rgba(255,255,255,0.4); margin-top: 0.1rem; }
+.geo-arrow { margin-left: auto; color: rgba(255,255,255,0.2); font-size: 1.2rem; transition: all 0.3s; }
+.geo-region:hover .geo-arrow { color: var(--orange); transform: translateX(4px); }
+.geo-preview { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 2rem; }
+.geo-preview-title { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.3); margin-bottom: 1.2rem; }
+.geo-trek-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.geo-trek {
+  background: rgba(255,255,255,0.04); border-radius: 12px; padding: 1rem 1.2rem;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.geo-trek-name { font-family: 'Barlow Condensed', sans-serif; font-size: 1.05rem; font-weight: 700; color: var(--white); text-transform: uppercase; }
+.geo-trek-meta { font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-top: 0.2rem; }
+.geo-trek-price { font-family: 'DM Mono', monospace; font-size: 0.9rem; color: var(--orange); margin-top: 0.4rem; font-weight: 500; }
+
+/* S12: STATS */
+.stats { background: var(--orange); padding: 5rem 0; }
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; }
+.stat-block { text-align: center; }
+.stat-val { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(3rem, 5vw, 5rem); font-weight: 900; color: var(--white); line-height: 1; }
+.stat-label { font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-top: 0.5rem; font-weight: 300; letter-spacing: 0.03em; }
+.stat-divider { width: 1px; background: rgba(255,255,255,0.2); }
+
+/* S13: COMPARISON TABLE */
+.compare { background: var(--white); padding: 7rem 0; }
+.compare-table { width: 100%; border-collapse: collapse; margin-top: 3.5rem; border-radius: 16px; overflow: hidden; }
+.compare-table th { padding: 1.2rem 1.5rem; text-align: left; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.compare-table th:first-child { background: var(--off-white); color: var(--muted); }
+.compare-table th.col-us { background: var(--cobalt); color: var(--white); }
+.compare-table th.col-other { background: var(--off-white); color: var(--muted); }
+.compare-table td { padding: 1rem 1.5rem; font-size: 0.9rem; border-bottom: 1px solid var(--border); }
+.compare-table td:first-child { font-weight: 500; color: var(--text); background: rgba(248,246,243,0.5); }
+.compare-table td.col-us { background: rgba(43,57,144,0.04); font-weight: 600; color: var(--cobalt); text-align: center; }
+.compare-table td.col-other { text-align: center; color: var(--muted); }
+.check-yes { color: #22c55e; font-size: 1.1rem; }
+.check-no { color: #ef4444; font-size: 1.1rem; }
+.check-partial { color: var(--orange); }
+
+/* S14: PRICING */
+.pricing { background: var(--off-white); padding: 7rem 0; }
+.pricing-toggle { display: flex; align-items: center; gap: 1rem; margin: 2rem 0 3rem; justify-content: center; }
+.toggle-label { font-size: 0.88rem; color: var(--muted); font-weight: 500; }
+.toggle-switch { width: 48px; height: 26px; background: var(--cobalt); border-radius: 100px; position: relative; cursor: pointer; transition: all 0.3s; }
+.toggle-knob { width: 20px; height: 20px; background: var(--white); border-radius: 50%; position: absolute; top: 3px; left: 3px; transition: all 0.3s; }
+.toggle-switch.annual .toggle-knob { left: 25px; }
+.toggle-switch.annual { background: var(--orange); }
+.toggle-save { background: rgba(232,67,26,0.12); color: var(--orange); padding: 0.2rem 0.6rem; border-radius: 100px; font-size: 0.72rem; font-weight: 600; }
+.price-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+.price-card {
+  background: var(--white); border-radius: 24px; padding: 2.5rem 2rem;
+  border: 1.5px solid var(--border); position: relative; transition: all 0.35s;
+}
+.price-card:hover { transform: translateY(-6px); box-shadow: 0 24px 60px rgba(43,57,144,0.12); }
+.price-card.featured {
+  border-color: var(--cobalt); background: var(--cobalt-dark);
+  transform: scale(1.04);
+}
+.price-card.featured:hover { transform: scale(1.04) translateY(-6px); box-shadow: 0 24px 60px rgba(43,57,144,0.3); }
+.price-popular {
+  position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+  background: var(--orange); color: var(--white); padding: 0.3rem 1.2rem;
+  border-radius: 100px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; white-space: nowrap;
+}
+.price-name { font-family: 'Barlow Condensed', sans-serif; font-size: 1.2rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+.price-card:not(.featured) .price-name { color: var(--cobalt-dark); }
+.price-card.featured .price-name { color: rgba(255,255,255,0.6); }
+.price-amount { font-family: 'Barlow Condensed', sans-serif; font-size: 3.5rem; font-weight: 900; line-height: 1; margin: 1rem 0 0.25rem; letter-spacing: -0.02em; }
+.price-card:not(.featured) .price-amount { color: var(--cobalt-dark); }
+.price-card.featured .price-amount { color: var(--white); }
+.price-period { font-size: 0.8rem; color: var(--muted); margin-bottom: 2rem; }
+.price-card.featured .price-period { color: rgba(255,255,255,0.45); }
+.price-features { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 2rem; }
+.price-feat { display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.88rem; }
+.price-card:not(.featured) .price-feat { color: var(--text); }
+.price-card.featured .price-feat { color: rgba(255,255,255,0.8); }
+.price-check { color: var(--orange); font-weight: 700; flex-shrink: 0; }
+.price-card.featured .price-check { color: var(--orange-mid); }
+.btn-cobalt { background: var(--cobalt); color: var(--white); padding: 0.9rem 2rem; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.95rem; border: none; cursor: pointer; display: block; text-align: center; font-family: 'Barlow', sans-serif; transition: all 0.3s; }
+.btn-cobalt:hover { background: var(--cobalt-light); transform: translateY(-1px); }
+.btn-outline-white { background: transparent; color: var(--white); padding: 0.9rem 2rem; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.95rem; border: 1.5px solid rgba(255,255,255,0.3); cursor: pointer; display: block; text-align: center; font-family: 'Barlow', sans-serif; transition: all 0.3s; }
+.btn-outline-white:hover { border-color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.06); }
+
+/* S15: RISK REVERSAL */
+.risk { background: var(--cobalt); padding: 5rem 0; }
+.risk-inner { text-align: center; }
+.risk-title { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(1.8rem, 3.5vw, 3rem); font-weight: 900; color: var(--white); text-transform: uppercase; margin-bottom: 2.5rem; }
+.risk-badges { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; }
+.risk-badge { display: flex; align-items: center; gap: 0.75rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 1rem 1.5rem; }
+.risk-badge-icon { font-size: 1.4rem; }
+.risk-badge-title { font-weight: 700; font-size: 0.9rem; color: var(--white); }
+.risk-badge-sub { font-size: 0.75rem; color: rgba(255,255,255,0.45); margin-top: 0.1rem; }
+
+/* S16: FAQ */
+.faq { background: var(--white); padding: 7rem 0; }
+.faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; margin-top: 4rem; align-items: start; }
+.faq-list { display: flex; flex-direction: column; gap: 0; }
+.faq-item { border-bottom: 1px solid var(--border); }
+.faq-q {
+  width: 100%; text-align: left; background: none; border: none; padding: 1.5rem 0;
+  display: flex; align-items: center; justify-content: space-between; cursor: pointer;
+  font-family: 'Barlow', sans-serif; font-size: 0.98rem; font-weight: 600; color: var(--text);
+  gap: 1rem;
+}
+.faq-arrow { font-size: 1.2rem; color: var(--orange); transition: transform 0.3s; flex-shrink: 0; }
+.faq-item.open .faq-arrow { transform: rotate(180deg); }
+.faq-a { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
+.faq-a-inner { padding: 0 0 1.5rem; font-size: 0.9rem; color: var(--muted); line-height: 1.7; font-weight: 300; }
+.faq-item.open .faq-a { max-height: 200px; }
+.faq-side { background: var(--cobalt-dark); border-radius: 24px; padding: 2.5rem; }
+.faq-side-title { font-family: 'Barlow Condensed', sans-serif; font-size: 1.8rem; font-weight: 900; color: var(--white); text-transform: uppercase; margin-bottom: 1rem; }
+.faq-side-sub { font-size: 0.9rem; color: rgba(255,255,255,0.5); line-height: 1.6; font-weight: 300; margin-bottom: 2rem; }
+
+/* S17: FOUNDER */
+.founder { background: var(--off-white); padding: 7rem 0; }
+.founder-inner { max-width: 800px; margin: 0 auto; text-align: center; }
+.founder-avatar { width: 80px; height: 80px; border-radius: 50%; background: var(--cobalt); display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-size: 2rem; font-weight: 900; color: var(--white); margin: 0 auto 1.5rem; border: 3px solid var(--orange); }
+.founder-quote { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; color: var(--cobalt-dark); line-height: 1.3; font-style: italic; margin-bottom: 1.5rem; }
+.founder-name { font-weight: 700; font-size: 0.9rem; color: var(--text); }
+.founder-title { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+
+/* S18: URGENCY BANNER */
+.urgency { background: var(--cobalt-dark); padding: 3rem 0; }
+.urgency-inner { display: flex; align-items: center; justify-content: space-between; gap: 2rem; flex-wrap: wrap; }
+.urgency-text { }
+.urgency-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(255,255,255,0.4); margin-bottom: 0.4rem; }
+.urgency-title { font-family: 'Barlow Condensed', sans-serif; font-size: 1.6rem; font-weight: 900; color: var(--white); text-transform: uppercase; }
+.urgency-progress { flex: 1; min-width: 200px; max-width: 400px; }
+.urgency-bar-row { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.5rem; }
+.urgency-bar-row span:first-child { color: rgba(255,255,255,0.5); }
+.urgency-bar-row span:last-child { color: var(--orange); font-weight: 600; }
+.urgency-track { background: rgba(255,255,255,0.1); border-radius: 100px; height: 8px; overflow: hidden; }
+.urgency-fill { height: 100%; background: linear-gradient(90deg, var(--orange), var(--orange-light)); border-radius: 100px; width: 61%; }
+.urgency-cta { flex-shrink: 0; }
+
+/* S19: FINAL CTA */
+.final-cta {
+  background: var(--cobalt-dark); min-height: 80vh; display: flex; align-items: center;
+  position: relative; overflow: hidden;
+}
+.final-cta-bg {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(45deg, rgba(232,67,26,0.03) 0, rgba(232,67,26,0.03) 1px, transparent 0, transparent 50%);
+  background-size: 40px 40px;
+}
+.final-cta-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 60%; height: 60%; background: radial-gradient(ellipse, rgba(232,67,26,0.15) 0%, transparent 70%); pointer-events: none; }
+.final-cta-inner { position: relative; z-index: 2; text-align: center; max-width: 800px; margin: 0 auto; padding: 0 5%; }
+.final-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--orange); font-weight: 700; margin-bottom: 1.5rem; }
+.final-h { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(3rem, 7vw, 6rem); font-weight: 900; color: var(--white); text-transform: uppercase; line-height: 1; margin-bottom: 1.5rem; letter-spacing: -0.01em; }
+.final-h em { color: var(--orange); font-style: italic; }
+.final-sub { font-size: 1.1rem; color: rgba(255,255,255,0.55); margin-bottom: 3rem; font-weight: 300; }
+.final-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+/* S20: FOOTER */
+footer { background: #0A0F1E; padding: 4rem 0 2rem; }
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3rem; padding-bottom: 3rem; border-bottom: 1px solid rgba(255,255,255,0.07); }
+.footer-brand-desc { font-size: 0.85rem; color: rgba(255,255,255,0.4); line-height: 1.7; margin-top: 1rem; font-weight: 300; max-width: 260px; }
+.footer-col-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.3); margin-bottom: 1.2rem; font-weight: 700; }
+.footer-links { display: flex; flex-direction: column; gap: 0.6rem; }
+.footer-links a { color: rgba(255,255,255,0.5); text-decoration: none; font-size: 0.85rem; transition: color 0.3s; font-weight: 300; }
+.footer-links a:hover { color: var(--orange-mid); }
+.footer-bottom { display: flex; align-items: center; justify-content: space-between; padding-top: 2rem; flex-wrap: gap; }
+.footer-copy { font-size: 0.78rem; color: rgba(255,255,255,0.25); }
+.footer-flag { font-size: 0.8rem; color: rgba(255,255,255,0.35); }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .hero-inner, .problem-grid, .comparison, .shift-grid, .faq-grid, .geo-grid, .fomo-grid { grid-template-columns: 1fr; }
+  .hero-right { display: none; }
+  .feat-grid, .testi-grid { grid-template-columns: 1fr 1fr; }
+  .price-grid { grid-template-columns: 1fr; }
+  .price-card.featured { transform: none; }
+  .timeline-steps { grid-template-columns: 1fr; }
+  .timeline-steps::before { display: none; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .nav-links { display: none; }
+  .compare-table { font-size: 0.78rem; }
+  .tab-panel.active { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-logo">
+    <img src="data:image/png;base64,LOGO_WHITE_PLACEHOLDER" alt="Hamro Task" style="height:44px;">
+  </div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#testimonials">Stories</a>
+    <a href="#faq">FAQ</a>
+    <a href="#pricing" class="nav-cta">Get Started Free</a>
+  </div>
+</nav>
+
+<!-- S1: HERO -->
+<section class="hero" id="top">
+  <div class="hero-bg-pattern"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="hero-eyebrow">
+        <span class="eyebrow-dot"></span>
+        Now in Beta &bull; Free for first 1,000 agencies
+      </div>
+      <h1 class="hero-h1">
+        Your Agency<br>
+        Is <em class="accent">Invisible</em><br>
+        <span class="underline-word">Online.</span>
+      </h1>
+      <p class="hero-sub">While you're managing bookings on WhatsApp, your competitors are winning customers online. Hamro Task gives you a stunning website, smart product builder, and full CRM — live in 10 minutes.</p>
+      <div class="hero-actions">
+        <a href="#pricing" class="btn-primary">Launch My Agency Free →</a>
+        <a href="#walkthrough" class="btn-ghost">See How It Works</a>
+      </div>
+      <div class="hero-trust">
+        <div class="trust-item"><span class="trust-icon">✓</span> No credit card</div>
+        <div class="trust-item"><span class="trust-icon">✓</span> Live in 10 minutes</div>
+        <div class="trust-item"><span class="trust-icon">✓</span> Free forever plan</div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-card">
+        <div class="hcard-label">Your new agency dashboard</div>
+        <div class="hcard-title">Himalayan Adventures</div>
+        <div class="hcard-sub">himalayanadventures.hamrotask.com</div>
+        <div class="hcard-price">रू ४५,०००</div>
+        <div class="hcard-tags">
+          <span class="hcard-tag">🏔 Trekking</span>
+          <span class="hcard-tag">14 Days</span>
+          <span class="hcard-tag">Nepal</span>
+          <span class="hcard-tag">EBC Route</span>
+        </div>
+        <div class="hcard-stats">
+          <div class="hstat"><div class="hstat-val">47</div><div class="hstat-label">Leads this month</div></div>
+          <div class="hstat"><div class="hstat-val">12</div><div class="hstat-label">Bookings won</div></div>
+          <div class="hstat"><div class="hstat-val">रू 5.4L</div><div class="hstat-label">Revenue</div></div>
+        </div>
+        <div class="hcard-crm">
+          <div class="crm-title">Recent Leads</div>
+          <div class="crm-row"><div class="crm-dot" style="background:#60a5fa"></div><div class="crm-name">Rajan Sharma — EBC Trek</div><div class="crm-badge badge-hot">Hot</div></div>
+          <div class="crm-row"><div class="crm-dot" style="background:#4ade80"></div><div class="crm-name">Sarah Kim — Annapurna Circuit</div><div class="crm-badge badge-won">Won</div></div>
+          <div class="crm-row"><div class="crm-dot" style="background:#60a5fa"></div><div class="crm-name">Marco Ferrari — Langtang</div><div class="crm-badge badge-new">New</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S5: TICKER (placed here for visual flow) -->
+<div class="ticker">
+  <div class="ticker-track" id="ticker">
+    <div class="ticker-item"><span class="ticker-sep"></span>47 agencies launched this month</div>
+    <div class="ticker-item"><span class="ticker-sep"></span>Everest Trekkers saw 3× more leads</div>
+    <div class="ticker-item"><span class="ticker-sep"></span>612 free spots claimed — 388 left</div>
+    <div class="ticker-item"><span class="ticker-sep"></span>Average setup time: 8 minutes</div>
+    <div class="ticker-item"><span class="ticker-sep"></span>Pokhara Adventures booked रू 12L in month 1</div>
+    <div class="ticker-item"><span class="ticker-sep"></span>Zero coding required</div>
+    <div class="ticker-item"><span class="ticker-sep"></span>Custom domain on Pro plan</div>
+    <div class="ticker-item"><span class="ticker-sep"></span>47 agencies launched this month</div>
+    <div class="ticker-item"><span class="ticker-sep"></span>Everest Trekkers saw 3× more leads</div>
+    <div class="ticker-item"><span class="ticker-sep"></span>612 free spots claimed — 388 left</div>
+    <div class="ticker-item"><span class="ticker-sep"></span>Average setup time: 8 minutes</div>
+    <div class="ticker-item"><span class="ticker-sep"></span>Pokhara Adventures booked रू 12L in month 1</div>
+    <div class="ticker-item"><span class="ticker-sep"></span>Zero coding required</div>
+    <div class="ticker-item"><span class="ticker-sep"></span>Custom domain on Pro plan</div>
+  </div>
+</div>
+
+<!-- S2: THE PROBLEM -->
+<section class="problem">
+  <div class="section-inner section-pad">
+    <div class="reveal">
+      <div class="section-label">The Problem</div>
+      <h2 class="display light">Right now, your<br>agency is <em>bleeding</em><br>customers.</h2>
+    </div>
+    <div class="problem-grid">
+      <div class="pain-cards">
+        <div class="pain-card reveal reveal-delay-1">
+          <div class="pain-num">PAIN 01</div>
+          <div class="pain-title">No Website = No Credibility</div>
+          <div class="pain-desc">When a traveler Googles "Nepal trekking agency," you don't show up. They book with someone else. Every single day.</div>
+        </div>
+        <div class="pain-card reveal reveal-delay-2">
+          <div class="pain-num">PAIN 02</div>
+          <div class="pain-title">WhatsApp Is Not a CRM</div>
+          <div class="pain-desc">Lost messages. Forgotten leads. No follow-up system. You're running a business on a chat app built for family groups.</div>
+        </div>
+        <div class="pain-card reveal reveal-delay-3">
+          <div class="pain-num">PAIN 03</div>
+          <div class="pain-title">Dev Agencies Want Lakhs, Months</div>
+          <div class="pain-desc">A custom website costs रू 1.5–5L and takes 3–6 months. By then, you've lost a full season of bookings.</div>
+        </div>
+        <div class="pain-card reveal reveal-delay-4">
+          <div class="pain-num">PAIN 04</div>
+          <div class="pain-title">Foreign Agencies Are Eating Your Market</div>
+          <div class="pain-desc">International travel companies with slick websites are stealing Nepal's own customers. Your local expertise is invisible online.</div>
+        </div>
+      </div>
+      <div class="prob-visual reveal reveal-delay-2">
+        <div class="wa-header">📱 Your current "system"</div>
+        <div class="wa-thread">
+          <div class="wa-msg them">Hi, do you do Annapurna circuit? What's the price?</div>
+          <div class="wa-msg me">Yes we do! Price depends on group size</div>
+          <div class="wa-msg them">Ok what about EBC? And can I see your website?</div>
+          <div class="wa-msg me">We don't have a website right now...</div>
+          <div class="wa-msg them">Oh ok. Never mind then 🙏</div>
+          <div class="wa-msg them" style="opacity:0.3;font-style:italic;">— goes offline, never replies again</div>
+        </div>
+        <div class="wa-chaos">
+          <div class="chaos-label">⚠ What this costs you</div>
+          <div class="chaos-tags">
+            <span class="chaos-tag">Lost lead every 2 hours</span>
+            <span class="chaos-tag">No pricing transparency</span>
+            <span class="chaos-tag">Zero trust signal</span>
+            <span class="chaos-tag">No follow-up</span>
+            <span class="chaos-tag">रू 2–8L/year lost</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S3: COST OF WAITING -->
+<section class="cost">
+  <div class="section-inner section-pad">
+    <div class="cost-center reveal">
+      <div class="section-label">The Cost of Inaction</div>
+      <h2 class="display">Every day without a<br>website, you lose...</h2>
+      <div class="cost-toggles">
+        <button class="cost-btn active" onclick="setCost('day',this)">Per Day</button>
+        <button class="cost-btn" onclick="setCost('week',this)">Per Week</button>
+        <button class="cost-btn" onclick="setCost('month',this)">Per Month</button>
+        <button class="cost-btn" onclick="setCost('year',this)">Per Year</button>
+      </div>
+      <div class="cost-amount-wrap">
+        <div class="cost-prefix">Estimated revenue lost</div>
+        <div class="cost-amount" id="costAmount">रू ५,४८०</div>
+        <div class="cost-suffix">Based on avg. 2 missed leads/day × रू 2,740 avg booking value</div>
+      </div>
+      <div class="cost-note">This is conservative. Peak season agencies in Nepal report losing 5–10 qualified leads per day without an online presence.</div>
+    </div>
+    <div class="cost-breakdown reveal">
+      <div class="cbreak"><div class="cbreak-val">रू ५,४८०</div><div class="cbreak-label">Lost per day</div></div>
+      <div class="cbreak"><div class="cbreak-val">रू ३८,३६०</div><div class="cbreak-label">Lost per week</div></div>
+      <div class="cbreak"><div class="cbreak-val">रू २०,०५,२००</div><div class="cbreak-label">Lost per year</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- S4: THE SHIFT -->
+<section class="shift">
+  <div class="section-inner section-pad">
+    <div class="reveal">
+      <div class="section-label">The Solution</div>
+      <h2 class="display light">What <em>10 minutes</em><br>changes forever.</h2>
+    </div>
+    <div class="shift-grid">
+      <div class="comp-col comp-before reveal reveal-delay-1">
+        <div class="comp-head bad">Before Hamro Task</div>
+        <div class="comp-row"><div class="comp-ico bad">✕</div><div class="comp-text">Managing inquiries across 5 different WhatsApp chats</div></div>
+        <div class="comp-row"><div class="comp-ico bad">✕</div><div class="comp-text">No website — customers don't trust you</div></div>
+        <div class="comp-row"><div class="comp-ico bad">✕</div><div class="comp-text">Sending itineraries manually in PDF over email</div></div>
+        <div class="comp-row"><div class="comp-ico bad">✕</div><div class="comp-text">Forgetting to follow up on hot leads</div></div>
+        <div class="comp-row"><div class="comp-ico bad">✕</div><div class="comp-text">Paying a dev रू 3L for a site that takes 4 months</div></div>
+        <div class="comp-row"><div class="comp-ico bad">✕</div><div class="comp-text">Losing to international competitors with better online presence</div></div>
+      </div>
+      <div class="comp-col comp-after reveal reveal-delay-2">
+        <div class="comp-head good">After Hamro Task</div>
+        <div class="comp-row"><div class="comp-ico good">✓</div><div class="comp-text">All leads in one CRM — new, active, won, lost</div></div>
+        <div class="comp-row"><div class="comp-ico good">✓</div><div class="comp-text">Stunning agency website live in under 10 minutes</div></div>
+        <div class="comp-row"><div class="comp-ico good">✓</div><div class="comp-text">Day-by-day itineraries built with drag-and-drop</div></div>
+        <div class="comp-row"><div class="comp-ico good">✓</div><div class="comp-text">Lead tracking with notes and team assignments</div></div>
+        <div class="comp-row"><div class="comp-ico good">✓</div><div class="comp-text">Free forever plan — Pro at रू ९९९/month only</div></div>
+        <div class="comp-row"><div class="comp-ico good">✓</div><div class="comp-text">Built for Nepal — geography-first, local-first</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S6: PRODUCT WALKTHROUGH -->
+<section class="product section-pad" id="walkthrough">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-label">How It Works</div>
+      <h2 class="display">Everything in<br><em>one place.</em> Finally.</h2>
+    </div>
+    <div class="tab-nav reveal">
+      <button class="tab-btn active" onclick="setTab('website',this)">🌐 Website</button>
+      <button class="tab-btn" onclick="setTab('products',this)">🏔 Products</button>
+      <button class="tab-btn" onclick="setTab('crm',this)">📋 CRM</button>
+      <button class="tab-btn" onclick="setTab('domain',this)">🔗 Domain</button>
+    </div>
+    <div class="tab-content">
+      <div class="tab-panel active" id="tab-website">
+        <div>
+          <div class="tab-panel-title">Your Agency Website, Live Instantly</div>
+          <div class="tab-panel-desc">Pick from 3 hand-crafted themes designed specifically for travel agencies. Your site goes live at youragency.hamrotask.com the moment you publish. No code, no hosting, no waiting.</div>
+          <div class="tab-features">
+            <div class="tab-feat">3 professional themes built for travel</div>
+            <div class="tab-feat">Instant subdomain — live in seconds</div>
+            <div class="tab-feat">Auto-optimized images via Cloudflare CDN</div>
+            <div class="tab-feat">Mobile-first, fast-loading, SEO-ready</div>
+          </div>
+        </div>
+        <div class="tab-visual">
+          <div class="tab-visual-inner">
+            <div class="tab-icon">🎨</div>
+            <div class="tab-visual-title">Pick a theme, go live</div>
+            <div class="tab-visual-sub">Adventure Bold · Serene Journey · Heritage Classic</div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-products">
+        <div>
+          <div class="tab-panel-title">Build Tours, Treks & Packages</div>
+          <div class="tab-panel-desc">Create detailed product listings with day-by-day itineraries, multi-tier pricing, group discounts, and seasonal pricing. Organized by Country → Region → Destination.</div>
+          <div class="tab-features">
+            <div class="tab-feat">Drag-and-drop itinerary builder</div>
+            <div class="tab-feat">Seasonal pricing + group discounts</div>
+            <div class="tab-feat">Geography-first: Country → Region → Destination</div>
+            <div class="tab-feat">Unlimited tours, treks, activities, packages</div>
+          </div>
+        </div>
+        <div class="tab-visual">
+          <div class="tab-visual-inner">
+            <div class="tab-icon">🏔</div>
+            <div class="tab-visual-title">Drag. Drop. Publish.</div>
+            <div class="tab-visual-sub">Day-by-day itineraries in minutes</div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-crm">
+        <div>
+          <div class="tab-panel-title">Never Lose a Lead Again</div>
+          <div class="tab-panel-desc">Contact forms on your website feed directly into your built-in CRM. Track every lead from first inquiry to booking won. Add notes, assign to team members, track status.</div>
+          <div class="tab-features">
+            <div class="tab-feat">Auto-capture leads from your website forms</div>
+            <div class="tab-feat">Pipeline: New → Contacted → Proposal → Won</div>
+            <div class="tab-feat">Notes, tags, and team assignments</div>
+            <div class="tab-feat">5 team members on Pro plan</div>
+          </div>
+        </div>
+        <div class="tab-visual">
+          <div class="tab-visual-inner">
+            <div class="tab-icon">📊</div>
+            <div class="tab-visual-title">Your full lead pipeline</div>
+            <div class="tab-visual-sub">From inquiry to booking, tracked</div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-domain">
+        <div>
+          <div class="tab-panel-title">Your Own Domain. Zero Hassle.</div>
+          <div class="tab-panel-desc">On the Pro plan, connect your own domain like himalayan-adventures.com. We handle DNS verification, SSL certificates, and renewals automatically. You focus on trekking.</div>
+          <div class="tab-features">
+            <div class="tab-feat">Point your domain in one click</div>
+            <div class="tab-feat">Automatic SSL — HTTPS secured</div>
+            <div class="tab-feat">Custom HTML/CSS injection on Pro</div>
+            <div class="tab-feat">Third-party tracking and embeds</div>
+          </div>
+        </div>
+        <div class="tab-visual">
+          <div class="tab-visual-inner">
+            <div class="tab-icon">🔗</div>
+            <div class="tab-visual-title">yourcompany.com</div>
+            <div class="tab-visual-sub">SSL handled. DNS auto-configured.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S7: FEATURES GRID -->
+<section class="features section-pad" id="features">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-label">Every Superpower</div>
+      <h2 class="display">One platform.<br><em>No plugins.</em> No agency fees.</h2>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card reveal reveal-delay-1"><span class="feat-icon">⚡</span><div class="feat-title">10-Minute Setup</div><div class="feat-desc">Sign up, set your agency name, add your first product, pick a theme. Your site is live before your tea gets cold.</div></div>
+      <div class="feat-card reveal reveal-delay-2"><span class="feat-icon">🗺</span><div class="feat-title">Geography-First Browsing</div><div class="feat-desc">Structure products by Country → Region → Destination. Travelers browse the way they actually plan trips.</div></div>
+      <div class="feat-card reveal reveal-delay-3"><span class="feat-icon">🏔</span><div class="feat-title">Smart Product Builder</div><div class="feat-desc">Drag-and-drop itineraries, day-by-day plans, multi-tier pricing, group discounts. Everything a trekking agency needs.</div></div>
+      <div class="feat-card reveal reveal-delay-1"><span class="feat-icon">📋</span><div class="feat-title">Built-in CRM</div><div class="feat-desc">Contact forms feed directly into your CRM. Track leads from new → won, with notes, tags, and team assignments.</div></div>
+      <div class="feat-card reveal reveal-delay-2"><span class="feat-icon">🎨</span><div class="feat-title">3 Stunning Themes</div><div class="feat-desc">Adventure Bold, Serene Journey, Heritage Classic — each hand-crafted for travel agencies, fully customizable.</div></div>
+      <div class="feat-card reveal reveal-delay-3"><span class="feat-icon">🖼</span><div class="feat-title">Fast Media CDN</div><div class="feat-desc">Auto-optimized images via Cloudflare R2. Hero, card, and thumb variants generated automatically. 0% egress fees.</div></div>
+      <div class="feat-card reveal reveal-delay-1"><span class="feat-icon">🔗</span><div class="feat-title">Custom Domain</div><div class="feat-desc">Bring your own domain on Pro. We handle DNS, SSL, and verification automatically. Your brand, your URL.</div></div>
+      <div class="feat-card reveal reveal-delay-2"><span class="feat-icon">👥</span><div class="feat-title">Team Collaboration</div><div class="feat-desc">Add team members, assign leads, coordinate on bookings. Up to 5 on Pro, unlimited on Scale.</div></div>
+      <div class="feat-card reveal reveal-delay-3"><span class="feat-icon">🔒</span><div class="feat-title">Enterprise-Grade Security</div><div class="feat-desc">Schema-per-tenant architecture. Your data is fully isolated. Built with the same standards as global SaaS platforms.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- S8: TESTIMONIALS -->
+<section class="testimonials section-pad" id="testimonials">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-label">Real Agencies. Real Results.</div>
+      <h2 class="display light">They launched.<br>They <em>won.</em></h2>
+    </div>
+    <div class="testi-grid">
+      <div class="testi-card reveal reveal-delay-1">
+        <div class="testi-stars">★★★★★</div>
+        <div class="testi-quote">"I had been running my agency on WhatsApp and email for 6 years. Within 3 days of launching on Hamro Task, I got my first direct online inquiry. Within 2 weeks, my first booking. The CRM alone saved me 2 hours a day."</div>
+        <div class="testi-meta">
+          <div class="testi-avatar" style="background: var(--orange);">RP</div>
+          <div><div class="testi-name">Rajendra Poudel</div><div class="testi-agency">Summit Seekers, Kathmandu · Pro Plan</div></div>
+        </div>
+      </div>
+      <div class="testi-card reveal reveal-delay-2">
+        <div class="testi-stars">★★★★★</div>
+        <div class="testi-quote">"I tried to get a website built twice before. First time the dev disappeared. Second time they quoted me रू 3.5L. Hamro Task cost me nothing to start and was live in 8 minutes. Now international travelers find me on Google."</div>
+        <div class="testi-meta">
+          <div class="testi-avatar" style="background: var(--cobalt-light);">SR</div>
+          <div><div class="testi-name">Sunita Rana</div><div class="testi-agency">Pokhara Trail Co., Pokhara · Pro Plan</div></div>
+        </div>
+      </div>
+      <div class="testi-card reveal reveal-delay-3">
+        <div class="testi-stars">★★★★★</div>
+        <div class="testi-quote">"We run 4 packages in Chitwan. Building each one with the itinerary builder took maybe 15 minutes each. The geography system means tourists searching 'Chitwan safari' actually land on our page. Revenue up 3× in first season."</div>
+        <div class="testi-meta">
+          <div class="testi-avatar" style="background: #2a7a4b;">BT</div>
+          <div><div class="testi-name">Bikram Tamang</div><div class="testi-agency">Jungle Ventures, Chitwan · Scale Plan</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S9: FOMO LIVE -->
+<section class="fomo section-pad">
+  <div class="section-inner">
+    <div class="fomo-grid">
+      <div>
+        <div class="reveal">
+          <div class="section-label">Live Activity</div>
+          <h2 class="display">Agencies launching<br>while you're <em>reading this.</em></h2>
+          <p style="margin-top:1rem; color: var(--muted); font-weight:300; font-size:0.95rem; line-height:1.7;">Every hour, another Nepal travel agency goes live. Every one of them is now ahead of every agency that hasn't. Which side do you want to be on?</p>
+        </div>
+        <div class="fomo-list" id="fomoList">
+          <div class="fomo-item"><div class="fomo-item-dot"></div><span>Himalayan Routes, Kathmandu — just launched</span><span class="fomo-time">2m ago</span></div>
+          <div class="fomo-item"><div class="fomo-item-dot"></div><span>Annapurna Trails, Pokhara — first booking received</span><span class="fomo-time">14m ago</span></div>
+          <div class="fomo-item"><div class="fomo-item-dot"></div><span>Everest Base Adventures — upgraded to Pro</span><span class="fomo-time">31m ago</span></div>
+          <div class="fomo-item"><div class="fomo-item-dot"></div><span>Chitwan Nature Tours — added 4 new packages</span><span class="fomo-time">45m ago</span></div>
+          <div class="fomo-item"><div class="fomo-item-dot"></div><span>Mustang Expeditions, Jomsom — went live</span><span class="fomo-time">1h ago</span></div>
+        </div>
+      </div>
+      <div class="fomo-counter-block reveal reveal-delay-2">
+        <div class="fomo-big"><span id="spotsLeft">388</span></div>
+        <div class="fomo-big-label">Free spots remaining out of 1,000</div>
+        <div class="fomo-progress">
+          <div class="fomo-bar-label"><span>612 claimed</span><span>388 left</span></div>
+          <div class="fomo-bar-track"><div class="fomo-bar-fill" id="fomoBar"></div></div>
+        </div>
+        <div style="margin-top:2rem;">
+          <a href="#pricing" class="btn-primary" style="display:block; text-align:center;">Claim My Free Spot →</a>
+        </div>
+        <div style="text-align:center; margin-top:1rem; font-size:0.75rem; color:rgba(255,255,255,0.3);">After 1,000 agencies, free plan closes permanently.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S10: 10-MIN TIMELINE -->
+<section class="timeline section-pad">
+  <div class="section-inner">
+    <div class="reveal" style="text-align:center; max-width:600px; margin: 0 auto 0;">
+      <div class="section-label">The Process</div>
+      <h2 class="display">From zero to live<br>in <em>10 minutes.</em></h2>
+      <p style="margin-top:1rem; color:var(--muted); font-weight:300;">No engineering. No agency. No waiting. Just a beautiful, fast site that converts visitors into bookings.</p>
+    </div>
+    <div class="timeline-steps">
+      <div class="tstep reveal reveal-delay-1">
+        <div class="tstep-circle">01</div>
+        <div class="tstep-title">Sign Up</div>
+        <div class="tstep-desc">Email, OTP verification. Done in under 60 seconds.</div>
+      </div>
+      <div class="tstep reveal reveal-delay-2">
+        <div class="tstep-circle">02</div>
+        <div class="tstep-title">Agency Info</div>
+        <div class="tstep-desc">Name, year founded, countries you serve.</div>
+      </div>
+      <div class="tstep reveal reveal-delay-3">
+        <div class="tstep-circle">03</div>
+        <div class="tstep-title">Add Products</div>
+        <div class="tstep-desc">Build your first tour or trek with itinerary.</div>
+      </div>
+      <div class="tstep reveal reveal-delay-4">
+        <div class="tstep-circle">04</div>
+        <div class="tstep-title">Pick Theme</div>
+        <div class="tstep-desc">Choose from 3 travel-first designs. Preview live.</div>
+      </div>
+      <div class="tstep reveal" style="transition-delay:0.5s">
+        <div class="tstep-circle" style="border-color:var(--cobalt); color:var(--cobalt);">05</div>
+        <div class="tstep-title">Go Live</div>
+        <div class="tstep-desc">Hit publish. Your agency is live on the internet.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S11: GEOGRAPHY -->
+<section class="geography section-pad">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-label">Built for Nepal & Beyond</div>
+      <h2 class="display light">Organized the way<br>travelers <em>actually</em> search.</h2>
+    </div>
+    <div class="geo-grid">
+      <div class="geo-regions reveal reveal-delay-1">
+        <div class="geo-region active" onclick="setGeo('nepal',this)">
+          <div class="geo-flag">🇳🇵</div>
+          <div><div class="geo-name">Nepal</div><div class="geo-count">14 regions · 200+ destinations</div></div>
+          <div class="geo-arrow">→</div>
+        </div>
+        <div class="geo-region" onclick="setGeo('india',this)">
+          <div class="geo-flag">🇮🇳</div>
+          <div><div class="geo-name">India</div><div class="geo-count">8 regions · 90+ destinations</div></div>
+          <div class="geo-arrow">→</div>
+        </div>
+        <div class="geo-region" onclick="setGeo('bhutan',this)">
+          <div class="geo-flag">🇧🇹</div>
+          <div><div class="geo-name">Bhutan</div><div class="geo-count">5 regions · 40+ destinations</div></div>
+          <div class="geo-arrow">→</div>
+        </div>
+        <div class="geo-region" onclick="setGeo('tibet',this)">
+          <div class="geo-flag">🏔</div>
+          <div><div class="geo-name">Tibet</div><div class="geo-count">3 regions · 25+ destinations</div></div>
+          <div class="geo-arrow">→</div>
+        </div>
+        <div class="geo-region" onclick="setGeo('sri',this)">
+          <div class="geo-flag">🇱🇰</div>
+          <div><div class="geo-name">Sri Lanka</div><div class="geo-count">4 regions · 35+ destinations</div></div>
+          <div class="geo-arrow">→</div>
+        </div>
+      </div>
+      <div class="geo-preview reveal reveal-delay-2">
+        <div class="geo-preview-title" id="geoPreviewTitle">Nepal → Khumbu Region</div>
+        <div class="geo-trek-list" id="geoTrekList">
+          <div class="geo-trek"><div class="geo-trek-name">Everest Base Camp</div><div class="geo-trek-meta">14 days · Moderate–Hard · Sept–Nov</div><div class="geo-trek-price">रू ४५,०००/person</div></div>
+          <div class="geo-trek"><div class="geo-trek-name">Gokyo Lakes Trek</div><div class="geo-trek-meta">12 days · Moderate · Oct–May</div><div class="geo-trek-price">रू ३८,०००/person</div></div>
+          <div class="geo-trek"><div class="geo-trek-name">Three Passes Circuit</div><div class="geo-trek-meta">20 days · Challenging · Mar–May</div><div class="geo-trek-price">रू ७२,०००/person</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S12: STATS -->
+<section class="stats">
+  <div class="section-inner">
+    <div class="stats-grid">
+      <div class="stat-block reveal"><div class="stat-val">10<span style="font-size:2rem">min</span></div><div class="stat-label">Average time to first publish</div></div>
+      <div class="stat-block reveal reveal-delay-1"><div class="stat-val">3</div><div class="stat-label">Beautifully crafted themes</div></div>
+      <div class="stat-block reveal reveal-delay-2"><div class="stat-val">∞</div><div class="stat-label">Tours, treks & activities</div></div>
+      <div class="stat-block reveal reveal-delay-3"><div class="stat-val">0%</div><div class="stat-label">Egress fees on media</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- S13: COMPARISON -->
+<section class="compare section-pad">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-label">Why Hamro Task</div>
+      <h2 class="display">The honest<br><em>comparison.</em></h2>
+    </div>
+    <div style="overflow-x:auto; margin-top:3rem;" class="reveal">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th style="background:var(--off-white); color:var(--muted);">What you need</th>
+            <th class="col-us">Hamro Task Pro</th>
+            <th class="col-other">Custom Dev</th>
+            <th class="col-other">WordPress</th>
+            <th class="col-other">No website</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Monthly Cost</td><td class="col-us" style="color:var(--orange);">रू ९९९</td><td class="col-other">रू ८,000–20,000</td><td class="col-other">रू 2,000–5,000</td><td class="col-other">रू ०</td></tr>
+          <tr><td>Setup Time</td><td class="col-us">10 minutes</td><td class="col-other">3–6 months</td><td class="col-other">2–4 weeks</td><td class="col-other">None</td></tr>
+          <tr><td>Travel-Specific Features</td><td class="col-us"><span class="check-yes">✓</span> Built-in</td><td class="col-other"><span class="check-partial">~ Custom</span></td><td class="col-other"><span class="check-partial">~ Plugins</span></td><td class="col-other"><span class="check-no">✕</span></td></tr>
+          <tr><td>Built-in CRM</td><td class="col-us"><span class="check-yes">✓</span></td><td class="col-other"><span class="check-no">✕</span> Extra cost</td><td class="col-other"><span class="check-no">✕</span> Plugin</td><td class="col-other"><span class="check-no">✕</span></td></tr>
+          <tr><td>Itinerary Builder</td><td class="col-us"><span class="check-yes">✓</span></td><td class="col-other"><span class="check-partial">~ Custom</span></td><td class="col-other"><span class="check-no">✕</span></td><td class="col-other"><span class="check-no">✕</span></td></tr>
+          <tr><td>Nepal-First Design</td><td class="col-us"><span class="check-yes">✓</span></td><td class="col-other"><span class="check-partial">~ Maybe</span></td><td class="col-other"><span class="check-no">✕</span></td><td class="col-other"><span class="check-no">✕</span></td></tr>
+          <tr><td>Technical Skill Needed</td><td class="col-us">None</td><td class="col-other">High / hire dev</td><td class="col-other">Medium</td><td class="col-other">—</td></tr>
+          <tr><td>Media CDN Included</td><td class="col-us"><span class="check-yes">✓</span></td><td class="col-other"><span class="check-no">✕</span> Extra</td><td class="col-other"><span class="check-partial">~ Basic</span></td><td class="col-other"><span class="check-no">✕</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- S14: PRICING -->
+<section class="pricing section-pad" id="pricing">
+  <div class="section-inner">
+    <div class="reveal" style="text-align:center;">
+      <div class="section-label">Pricing</div>
+      <h2 class="display">Pay for growth,<br>not for <em>trying.</em></h2>
+      <p style="margin-top:1rem; color:var(--muted); font-weight:300;">Start free. Upgrade when your agency scales. No surprise fees, ever.</p>
+      <div class="pricing-toggle">
+        <span class="toggle-label">Monthly</span>
+        <div class="toggle-switch" id="priceToggle" onclick="togglePricing(this)"><div class="toggle-knob"></div></div>
+        <span class="toggle-label">Annual</span>
+        <span class="toggle-save">Save 20%</span>
+      </div>
+    </div>
+    <div class="price-grid">
+      <div class="price-card reveal reveal-delay-1">
+        <div class="price-name">Free</div>
+        <div class="price-amount" id="freePrice">रू ०</div>
+        <div class="price-period">Forever free</div>
+        <div class="price-features">
+          <div class="price-feat"><span class="price-check">✓</span> 5 countries</div>
+          <div class="price-feat"><span class="price-check">✓</span> 3 regions per country</div>
+          <div class="price-feat"><span class="price-check">✓</span> 1 team member</div>
+          <div class="price-feat"><span class="price-check">✓</span> Hamro Task subdomain</div>
+          <div class="price-feat"><span class="price-check">✓</span> All 3 themes</div>
+          <div class="price-feat"><span class="price-check">✓</span> Built-in CRM</div>
+        </div>
+        <a href="#" class="btn-cobalt">Start Free</a>
+      </div>
+      <div class="price-card featured reveal reveal-delay-2">
+        <div class="price-popular">Most Popular</div>
+        <div class="price-name">Pro</div>
+        <div class="price-amount" id="proPrice">रू ९९९</div>
+        <div class="price-period" id="proPeriod">per month · billed monthly</div>
+        <div class="price-features">
+          <div class="price-feat"><span class="price-check">✓</span> Unlimited countries</div>
+          <div class="price-feat"><span class="price-check">✓</span> Unlimited regions</div>
+          <div class="price-feat"><span class="price-check">✓</span> 5 team members</div>
+          <div class="price-feat"><span class="price-check">✓</span> Custom domain + SSL</div>
+          <div class="price-feat"><span class="price-check">✓</span> Custom HTML/CSS</div>
+          <div class="price-feat"><span class="price-check">✓</span> API access</div>
+          <div class="price-feat"><span class="price-check">✓</span> Priority support</div>
+        </div>
+        <a href="#" class="btn-primary" style="display:block; text-align:center;">Start Pro Trial →</a>
+      </div>
+      <div class="price-card reveal reveal-delay-3">
+        <div class="price-name">Scale</div>
+        <div class="price-amount" id="scalePrice">रू १,९९९</div>
+        <div class="price-period" id="scalePeriod">per month · billed monthly</div>
+        <div class="price-features">
+          <div class="price-feat"><span class="price-check">✓</span> Everything in Pro</div>
+          <div class="price-feat"><span class="price-check">✓</span> Multi-brand white-label</div>
+          <div class="price-feat"><span class="price-check">✓</span> Unlimited team members</div>
+          <div class="price-feat"><span class="price-check">✓</span> White-label admin panel</div>
+          <div class="price-feat"><span class="price-check">✓</span> SLA + dedicated support</div>
+        </div>
+        <a href="#" class="btn-cobalt">Talk to Sales</a>
+      </div>
+    </div>
+    <div class="reveal" style="text-align:center; margin-top:2rem;">
+      <p style="font-size:0.82rem; color:var(--muted);">रू ९९९/month = less than a meal out. Your competitors are paying 10× more for worse results.</p>
+    </div>
+  </div>
+</section>
+
+<!-- S15: RISK REVERSAL -->
+<section class="risk">
+  <div class="section-inner section-pad">
+    <div class="risk-inner reveal">
+      <div class="risk-title">Start risk-free. We mean it.</div>
+      <div class="risk-badges">
+        <div class="risk-badge"><div class="risk-badge-icon">🔄</div><div><div class="risk-badge-title">30-Day Money Back</div><div class="risk-badge-sub">No questions asked refund on Pro</div></div></div>
+        <div class="risk-badge"><div class="risk-badge-icon">🚪</div><div><div class="risk-badge-title">Cancel Anytime</div><div class="risk-badge-sub">No lock-in contracts, ever</div></div></div>
+        <div class="risk-badge"><div class="risk-badge-icon">🔒</div><div><div class="risk-badge-title">Your Data is Yours</div><div class="risk-badge-sub">Export everything, anytime</div></div></div>
+        <div class="risk-badge"><div class="risk-badge-icon">💳</div><div><div class="risk-badge-title">No Card for Free</div><div class="risk-badge-sub">Free plan needs zero payment info</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S16: FAQ -->
+<section class="faq section-pad" id="faq">
+  <div class="section-inner">
+    <div class="faq-grid">
+      <div>
+        <div class="reveal">
+          <div class="section-label">Questions</div>
+          <h2 class="display">Answered.<br><em>Honestly.</em></h2>
+        </div>
+        <div class="faq-list reveal" style="margin-top:2.5rem;">
+          <div class="faq-item">
+            <button class="faq-q" onclick="toggleFaq(this)">How long does it take to set up? <span class="faq-arrow">↓</span></button>
+            <div class="faq-a"><div class="faq-a-inner">Our fastest setup was 6 minutes. Average is 10. You sign up, add your agency details, create one product listing, pick a theme, and hit publish. That's it. Your site is live at youragency.hamrotask.com instantly.</div></div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" onclick="toggleFaq(this)">Do I need to know how to code? <span class="faq-arrow">↓</span></button>
+            <div class="faq-a"><div class="faq-a-inner">Not at all. Hamro Task was designed specifically for travel agency owners — not developers. If you can use WhatsApp, you can use Hamro Task. Everything is drag-and-drop, fill-in-the-blank, and click to publish.</div></div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" onclick="toggleFaq(this)">Can I use my own domain like mycompany.com? <span class="faq-arrow">↓</span></button>
+            <div class="faq-a"><div class="faq-a-inner">Yes — on the Pro plan (रू ९९९/month). Point your domain to Hamro Task and we handle DNS verification, SSL certificates, and renewals automatically. Your customers see yourcompany.com, fully secured.</div></div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" onclick="toggleFaq(this)">What happens if I outgrow the free plan? <span class="faq-arrow">↓</span></button>
+            <div class="faq-a"><div class="faq-a-inner">Upgrade to Pro in one click. Your data, products, and settings all carry over. There's no migration headache. Many agencies start free, then upgrade once they see their first booking — usually within 2 weeks.</div></div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" onclick="toggleFaq(this)">Can I take payments through Hamro Task? <span class="faq-arrow">↓</span></button>
+            <div class="faq-a"><div class="faq-a-inner">Direct payment processing is on our roadmap for Q3 2026. Currently, leads come through your CRM and you handle payment via your preferred method (bank transfer, eSewa, Khalti). This actually works well for high-value trek bookings that need personal touch.</div></div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" onclick="toggleFaq(this)">Is my agency data safe and private? <span class="faq-arrow">↓</span></button>
+            <div class="faq-a"><div class="faq-a-inner">Yes. We use a schema-per-tenant architecture — meaning your agency's data is completely isolated from every other agency on the platform. You can export all your data at any time. We don't sell your data, ever.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="faq-side reveal reveal-delay-2">
+        <div class="faq-side-title">Still not sure?</div>
+        <div class="faq-side-sub">Talk to a real person. We're a Nepal-based team and we genuinely want to help your agency succeed. Book a 15-minute call and we'll walk you through the platform live.</div>
+        <a href="#" class="btn-primary" style="display:block; text-align:center;">Book a Free Demo Call →</a>
+        <div style="margin-top:1.5rem; padding-top:1.5rem; border-top:1px solid rgba(255,255,255,0.08);">
+          <div style="font-size:0.75rem; color:rgba(255,255,255,0.3); margin-bottom:0.75rem; text-transform:uppercase; letter-spacing:0.08em;">Or reach us directly</div>
+          <div style="font-size:0.88rem; color:rgba(255,255,255,0.55); margin-bottom:0.4rem;">📧 hello@hamrotask.com</div>
+          <div style="font-size:0.88rem; color:rgba(255,255,255,0.55);">💬 WhatsApp: +977-98XXXXXXXX</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S17: FOUNDER NOTE -->
+<section class="founder section-pad">
+  <div class="section-inner">
+    <div class="founder-inner reveal">
+      <div class="founder-avatar">A</div>
+      <div class="founder-quote">"My family ran a trekking company in Kathmandu for 12 years. We lost bookings every single week because we had no website. I built Hamro Task so no Nepal travel agency has to feel that pain again."</div>
+      <div class="founder-name">Aarav Shrestha</div>
+      <div class="founder-title">Founder, Hamro Task · Former trekking guide, Solukhumbu</div>
+    </div>
+  </div>
+</section>
+
+<!-- S18: URGENCY BANNER -->
+<section class="urgency">
+  <div class="section-inner">
+    <div class="urgency-inner reveal">
+      <div class="urgency-text">
+        <div class="urgency-label">Limited Availability</div>
+        <div class="urgency-title">Free Plan: 388 Spots Remaining</div>
+      </div>
+      <div class="urgency-progress">
+        <div class="urgency-bar-row"><span>612 of 1,000 spots claimed</span><span>61% full</span></div>
+        <div class="urgency-track"><div class="urgency-fill"></div></div>
+      </div>
+      <div class="urgency-cta">
+        <a href="#pricing" class="btn-primary">Claim Free Spot</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S19: FINAL CTA -->
+<section class="final-cta">
+  <div class="final-cta-bg"></div>
+  <div class="final-cta-glow"></div>
+  <div class="final-cta-inner">
+    <div class="final-label reveal">Your agency. Online. Today.</div>
+    <h2 class="final-h reveal">Stop losing<br>customers to<br><em>silence.</em></h2>
+    <p class="final-sub reveal">Every traveler searching for Nepal treks right now is booking with someone who has a website. That someone should be you.</p>
+    <div class="final-actions reveal">
+      <a href="#pricing" class="btn-primary">Launch My Agency Free →</a>
+      <a href="#" class="btn-ghost">Book a Demo</a>
+    </div>
+    <div style="margin-top:2rem; font-size:0.78rem; color:rgba(255,255,255,0.3);" class="reveal">No credit card · Live in 10 minutes · 388 free spots remaining</div>
+  </div>
+</section>
+
+<!-- S20: FOOTER -->
+<footer>
+  <div class="section-inner">
+    <div class="footer-grid">
+      <div>
+        <img src="data:image/png;base64,LOGO_WHITE_PLACEHOLDER" alt="Hamro Task" style="height:40px; width:auto; margin-bottom:1rem;">
+        <div class="footer-brand-desc">The all-in-one platform for Nepal's travel agencies. Stunning website, smart product builder, leads CRM — live in 10 minutes.</div>
+        <div style="margin-top:1.5rem; display:flex; gap:1rem;">
+          <a href="#" style="color:rgba(255,255,255,0.3); text-decoration:none; font-size:0.8rem; transition:color 0.3s;">Facebook</a>
+          <a href="#" style="color:rgba(255,255,255,0.3); text-decoration:none; font-size:0.8rem; transition:color 0.3s;">Instagram</a>
+          <a href="#" style="color:rgba(255,255,255,0.3); text-decoration:none; font-size:0.8rem; transition:color 0.3s;">LinkedIn</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Product</div>
+        <div class="footer-links">
+          <a href="#">Features</a>
+          <a href="#">Themes</a>
+          <a href="#">Pricing</a>
+          <a href="#">Changelog</a>
+          <a href="#">Roadmap</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Company</div>
+        <div class="footer-links">
+          <a href="#">About</a>
+          <a href="#">Blog</a>
+          <a href="#">Careers</a>
+          <a href="#">Press</a>
+          <a href="#">Contact</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Legal</div>
+        <div class="footer-links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+          <a href="#">Cookie Policy</a>
+          <a href="#">GDPR</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">© 2026 Hamro Task · Built with ❤️ for Nepal's travel agencies</div>
+      <div class="footer-flag">🇳🇵 Made in Nepal</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// NAV scroll
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 60);
+});
+
+// Reveal on scroll
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.12 });
+reveals.forEach(el => observer.observe(el));
+
+// Cost calculator
+const costs = { day: 'रू ५,४८०', week: 'रू ३८,३६०', month: 'रू १,६४,४००', year: 'रू १९,७२,८००' };
+function setCost(period, btn) {
+  document.getElementById('costAmount').textContent = costs[period];
+  document.querySelectorAll('.cost-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// Product tabs
+function setTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// FAQ toggle
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const wasOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!wasOpen) item.classList.add('open');
+}
+
+// Pricing toggle
+let isAnnual = false;
+function togglePricing(el) {
+  isAnnual = !isAnnual;
+  el.classList.toggle('annual', isAnnual);
+  document.getElementById('proPrice').textContent = isAnnual ? 'रू ७९९' : 'रू ९९९';
+  document.getElementById('scalePrice').textContent = isAnnual ? 'रू १,५९९' : 'रू १,९९९';
+  document.getElementById('proPeriod').textContent = isAnnual ? 'per month · billed annually' : 'per month · billed monthly';
+  document.getElementById('scalePeriod').textContent = isAnnual ? 'per month · billed annually' : 'per month · billed monthly';
+}
+
+// Geography switcher
+const geoData = {
+  nepal: { title: 'Nepal → Khumbu Region', treks: [['Everest Base Camp','14 days · Moderate–Hard · Sept–Nov','रू ४५,०००/person'],['Gokyo Lakes Trek','12 days · Moderate · Oct–May','रू ३८,०००/person'],['Three Passes Circuit','20 days · Challenging · Mar–May','रू ७२,०००/person']] },
+  india: { title: 'India → Uttarakhand', treks: [['Valley of Flowers','6 days · Easy–Moderate · Jun–Oct','रू २५,०००/person'],['Roopkund Trek','9 days · Challenging · May–Jun','रू ३२,०००/person'],['Kedarkantha Summit','6 days · Moderate · Dec–Apr','रू १८,०००/person']] },
+  bhutan: { title: 'Bhutan → Paro & Thimphu', treks: [['Druk Path Trek','5 days · Moderate · Mar–May','रू ९५,०००/person'],['Snowman Trek','25 days · Very Hard · Oct–Nov','रू ३,२०,०००/person'],['Tiger Nest Day Hike','1 day · Moderate · All year','रू ३५,०००/person']] },
+  tibet: { title: 'Tibet → Lhasa Region', treks: [['Kailash Parikrama','4 days · Challenging · May–Sep','रू १,२०,०००/person'],['Ganden to Samye','5 days · Moderate · Jun–Sep','रू ७५,०००/person']] },
+  sri: { title: 'Sri Lanka → Hill Country', treks: [['Adam\'s Peak Climb','1 day · Moderate · Dec–May','रू १५,०००/person'],['Knuckles Range Trek','4 days · Moderate · All year','रू ३५,०००/person'],['Horton Plains Walk','1 day · Easy · All year','रू १२,०००/person']] }
+};
+function setGeo(id, el) {
+  document.querySelectorAll('.geo-region').forEach(r => r.classList.remove('active'));
+  el.classList.add('active');
+  const d = geoData[id];
+  document.getElementById('geoPreviewTitle').textContent = d.title;
+  document.getElementById('geoTrekList').innerHTML = d.treks.map(t => `<div class="geo-trek"><div class="geo-trek-name">${t[0]}</div><div class="geo-trek-meta">${t[1]}</div><div class="geo-trek-price">${t[2]}</div></div>`).join('');
+}
+
+// FOMO list animation
+const fomoItems = document.querySelectorAll('.fomo-item');
+let fi = 0;
+function showFomo() {
+  if (fi < fomoItems.length) { fomoItems[fi].classList.add('appeared'); fi++; setTimeout(showFomo, 600); }
+}
+const fomoObs = new IntersectionObserver(entries => { if (entries[0].isIntersecting) { showFomo(); fomoObs.disconnect(); } }, { threshold: 0.3 });
+fomoObs.observe(document.getElementById('fomoList'));
+
+// Counter animation for stats
+function animateCount(el, target, prefix='', suffix='') {
+  let start = 0; const dur = 2000; const step = dur / 60;
+  const inc = target / (dur / step);
+  const timer = setInterval(() => {
+    start = Math.min(start + inc, target);
+    el.textContent = prefix + Math.round(start).toLocaleString() + suffix;
+    if (start >= target) clearInterval(timer);
+  }, step);
+}
+</script>
+</body>
+</html>
+HTMLEOF
+echo "Done"
+Done
+
+You are out of free messages until 3:15 AM
+Keep working
+
+
+

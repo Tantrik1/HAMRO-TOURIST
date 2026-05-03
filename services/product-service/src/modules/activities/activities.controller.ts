@@ -23,15 +23,17 @@ export class ActivitiesController {
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit?: number,
   ) {
+    const p = page || 1;
+    const l = limit || 20;
     const result = pub === 'true'
-      ? await this.svc.findPublished(regionId, page, limit)
-      : await this.svc.findAll(regionId, page, limit);
+      ? await this.svc.findPublished(regionId, p, l)
+      : await this.svc.findAll(regionId, p, l);
 
     return ok(result.data, {
-      page,
-      limit,
+      page: p,
+      limit: l,
       total: result.total,
-      totalPages: Math.ceil(result.total / (limit || 20)),
+      totalPages: Math.ceil(result.total / l),
     });
   }
 

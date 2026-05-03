@@ -31,7 +31,4 @@ export class ItineraryPricingEntity {
 
   @Column({ name: 'valid_to', type: 'date', nullable: true })
   validTo: Date | null;
-
-  @OneToMany(() => GroupDiscountEntity, (g) => g.pricing, { cascade: true })
-  groupDiscounts: GroupDiscountEntity[];
 }

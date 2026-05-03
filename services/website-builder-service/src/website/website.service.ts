@@ -134,7 +134,10 @@ export class WebsiteService implements OnApplicationShutdown {
   }
 
   private async updateTenantPublished(tenantSlug: string): Promise<void> {
-    const tenantServiceUrl = `http://localhost:${this.config.get('TENANT_SERVICE_PORT', 4002)}`;
+    const tenantServiceUrl = this.config.get<string>(
+      'TENANT_SERVICE_URL',
+      `http://localhost:${this.config.get('TENANT_SERVICE_PORT', 4002)}`,
+    );
     try {
       await firstValueFrom(this.httpService.patch(
         `${tenantServiceUrl}/tenants/${tenantSlug}`,

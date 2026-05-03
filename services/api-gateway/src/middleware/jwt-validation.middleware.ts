@@ -28,7 +28,11 @@ export class JwtValidationMiddleware implements NestMiddleware {
 
       (req as any).user = decoded;
 
-      // Inject tenant slug from JWT into header for downstream services
+      // Inject authenticated identity headers for downstream services.
+      // Downstream services must trust these ONLY when they come from the gateway.
+      if (decoded.sub) {
+        req.headers['x-user-id'] = decoded.sub;
+      }
       if (decoded.tenantSlug) {
         req.headers['x-tenant-slug'] = decoded.tenantSlug;
       }

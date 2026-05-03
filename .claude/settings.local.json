@@ -108,7 +108,13 @@
       "Read(//home/ubuntu/.ssh/**)",
       "Bash(gh repo *)",
       "Bash(export GIT_TRACE=1)",
-      "Bash(python3 -m json.tool /home/ubuntu/HAMRO-TOURIST/.claude/settings.local.json)"
+      "Bash(python3 -m json.tool /home/ubuntu/HAMRO-TOURIST/.claude/settings.local.json)",
+      "Bash(lsblk *)",
+      "Bash(sudo *)",
+      "Bash(docker volume *)",
+      "Bash(pnpm typecheck *)",
+      "Bash(docker-compose *)",
+      "Bash(git checkout *)"
     ]
   }
 }

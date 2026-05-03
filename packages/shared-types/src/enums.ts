@@ -46,6 +46,14 @@ export enum InclusionType {
 export enum DiscountType {
   PERCENTAGE = 'percentage',
   FIXED = 'fixed',
+  FIXED_AMOUNT = 'fixed_amount',
+}
+
+export enum LinkMode {
+  STANDALONE = 'standalone',
+  DESTINATION = 'destination',
+  PRODUCT = 'product',
+  MULTI = 'multi',
 }
 
 export enum ItineraryParentType {

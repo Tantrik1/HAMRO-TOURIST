@@ -3,12 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
-import { apiPost, apiPatch } from '@/lib/api';
-
-const POPULAR_COUNTRIES = [
-  'Nepal', 'India', 'Bhutan', 'Tibet', 'Pakistan', 'Sri Lanka',
-  'Thailand', 'Vietnam', 'Indonesia', 'Maldives', 'Japan', 'China',
-];
+import { apiPost, apiPatch, apiGet } from '@/lib/api';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -23,6 +18,7 @@ export default function OnboardingPage() {
   const [aboutCompany, setAboutCompany] = useState('');
   const [countriesServed, setCountriesServed] = useState<string[]>([]);
   const [customCountry, setCustomCountry] = useState('');
+  const [availableCountries, setAvailableCountries] = useState<{ id: string; name: string }[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -30,6 +26,15 @@ export default function OnboardingPage() {
     if (!isLoading && !isAuth) router.replace('/auth?mode=login');
     if (!isLoading && user?.tenantSlug) router.replace('/dashboard');
   }, [isAuth, isLoading, user, router]);
+
+  useEffect(() => {
+    // Fetch available countries from product-service
+    apiGet<any[]>('/products/countries').then((res) => {
+      if (res.success && Array.isArray(res.data)) {
+        setAvailableCountries(res.data.map((c) => ({ id: c.id, name: c.name })));
+      }
+    });
+  }, []);
 
   function slugify(name: string): string {
     return name
@@ -164,18 +169,18 @@ export default function OnboardingPage() {
           {step === 4 && (
             <Step title="Countries you serve" subtitle="Pick the destinations your agency operates in.">
               <div className="flex flex-wrap gap-2 mb-4">
-                {POPULAR_COUNTRIES.map((c) => (
+                {availableCountries.map((c: { id: string; name: string }) => (
                   <button
-                    key={c}
+                    key={c.id}
                     type="button"
-                    onClick={() => toggleCountry(c)}
+                    onClick={() => toggleCountry(c.name)}
                     className={`px-3 py-1.5 rounded-full text-sm font-body border transition-all ${
-                      countriesServed.includes(c)
+                      countriesServed.includes(c.name)
                         ? 'bg-grad-primary border-transparent text-white shadow-glow-violet'
                         : 'border-ht-border text-ht-soft hover:border-ht-violet hover:text-ht-text'
                     }`}
                   >
-                    {countriesServed.includes(c) && '✓ '}{c}
+                    {countriesServed.includes(c.name) && '✓ '}{c.name}
                   </button>
                 ))}
               </div>
@@ -196,9 +201,9 @@ export default function OnboardingPage() {
                   Add
                 </button>
               </div>
-              {countriesServed.filter((c) => !POPULAR_COUNTRIES.includes(c)).length > 0 && (
+              {countriesServed.filter((c) => !availableCountries.some((ac: { name: string }) => ac.name === c)).length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {countriesServed.filter((c) => !POPULAR_COUNTRIES.includes(c)).map((c) => (
+                  {countriesServed.filter((c) => !availableCountries.some((ac: { name: string }) => ac.name === c)).map((c) => (
                     <span key={c} className="px-3 py-1 rounded-full text-sm bg-ht-cyan/15 text-ht-cyan border border-ht-cyan/30">
                       {c} <button onClick={() => toggleCountry(c)} className="ml-1 hover:text-ht-rose">×</button>
                     </span>

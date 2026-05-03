@@ -45,7 +45,11 @@ export class ItinerariesService {
 
         if (tier.groupDiscounts?.length) {
           const discounts = tier.groupDiscounts.map((g) =>
-            this.discountRepo.create({ ...g, pricingId: savedPricing.id }),
+            this.discountRepo.create({
+              ...g,
+              entityType: 'itinerary_pricing',
+              entityId: savedPricing.id,
+            }),
           );
           await this.discountRepo.save(discounts);
         }
@@ -56,17 +60,18 @@ export class ItinerariesService {
   }
 
   async findByParent(parentId: string, parentType: string): Promise<ItineraryEntity[]> {
-    return this.repo.find({
+    const itineraries = await this.repo.find({
       where: { parentId, parentType },
-      relations: ['days', 'pricingTiers', 'pricingTiers.groupDiscounts'],
+      relations: ['days', 'pricingTiers'],
       order: { createdAt: 'ASC' },
     });
+    return itineraries;
   }
 
   async findOne(id: string): Promise<ItineraryEntity> {
     const itin = await this.repo.findOne({
       where: { id },
-      relations: ['days', 'pricingTiers', 'pricingTiers.groupDiscounts'],
+      relations: ['days', 'pricingTiers'],
     });
     if (!itin) throw new NotFoundException(`Itinerary ${id} not found`);
     return itin;
@@ -94,19 +99,26 @@ export class ItinerariesService {
   }> {
     const pricing = await this.pricingRepo.findOne({
       where: { id: dto.pricingTierId },
-      relations: ['groupDiscounts', 'itinerary'],
+      relations: ['itinerary'],
     });
     if (!pricing) throw new NotFoundException(`Pricing tier ${dto.pricingTierId} not found`);
 
     const basePrice = Number(pricing.basePrice);
     const pax = dto.pax;
 
-    // Find applicable group discount
+    // Find applicable group discount using polymorphic relationship
     let discountMultiplier = 1;
     let discountAmount = 0;
-    if (pricing.groupDiscounts?.length) {
-      const applicable = pricing.groupDiscounts.find(
-        (g) => pax >= g.minPax && pax <= g.maxPax,
+    const groupDiscounts = await this.discountRepo.find({
+      where: {
+        entityType: 'itinerary_pricing',
+        entityId: dto.pricingTierId,
+        isActive: true,
+      },
+    });
+    if (groupDiscounts?.length) {
+      const applicable = groupDiscounts.find(
+        (g) => pax >= g.minPax && (g.maxPax === null || pax <= g.maxPax),
       );
       if (applicable) {
         if (applicable.discountType === 'percentage') {

@@ -13,6 +13,19 @@ interface ApiError {
 
 type ApiResponse<T> = ApiSuccess<T> | ApiError;
 
+/**
+ * Paths under /api that must NEVER trigger a silent token-refresh + redirect on 401.
+ * Login/register failures must surface their actual error to the user, and the refresh
+ * endpoint refreshing itself would loop.
+ */
+const AUTH_PATHS_NO_REFRESH = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/send-otp',
+  '/auth/refresh',
+  '/auth/logout',
+];
+
 function getAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('ht_access_token');
@@ -20,7 +33,7 @@ function getAccessToken(): string | null {
 
 export function setTokens(accessToken: string) {
   localStorage.setItem('ht_access_token', accessToken);
-  // Refresh token is stored in HttpOnly cookie, don't try to store it in localStorage
+  // Refresh token is stored in HttpOnly cookie; we never persist it in localStorage.
 }
 
 export function clearTokens() {
@@ -31,7 +44,6 @@ let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;
 
 async function refreshAccessToken(): Promise<string | null> {
-  // Prevent multiple simultaneous refresh requests
   if (isRefreshing && refreshPromise) {
     return refreshPromise;
   }
@@ -42,35 +54,26 @@ async function refreshAccessToken(): Promise<string | null> {
       const res = await fetch(`${API_BASE}/api/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Send refresh token cookie
+        credentials: 'include', // Send HttpOnly refresh_token cookie
         body: JSON.stringify({}),
       });
 
       if (!res.ok) {
         clearTokens();
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login?reason=session_expired';
-        }
         return null;
       }
 
-      const json = await res.json() as ApiResponse<{ accessToken: string }>;
+      const json = (await res.json()) as ApiResponse<{ accessToken: string }>;
       if (json.success && json.data?.accessToken) {
         setTokens(json.data.accessToken);
         return json.data.accessToken;
       }
 
       clearTokens();
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login?reason=refresh_failed';
-      }
       return null;
     } catch (error) {
       console.error('Token refresh failed:', error);
       clearTokens();
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login?reason=network_error';
-      }
       return null;
     } finally {
       isRefreshing = false;
@@ -98,13 +101,14 @@ export async function apiFetch<T>(
   const fetchOptions: RequestInit = {
     ...options,
     headers,
-    credentials: 'include', // Always send cookies
+    credentials: 'include', // Always send cookies (refresh_token is HttpOnly)
   };
 
   let res = await fetch(`${API_BASE}/api${path}`, fetchOptions);
 
-  // Handle 401 with token refresh
-  if (res.status === 401 && token) {
+  // 401 → try one transparent refresh + retry, but never on auth endpoints themselves.
+  const isAuthPath = AUTH_PATHS_NO_REFRESH.some((p) => path.startsWith(p));
+  if (res.status === 401 && token && !isAuthPath) {
     const newToken = await refreshAccessToken();
     if (newToken) {
       headers['Authorization'] = `Bearer ${newToken}`;
@@ -118,7 +122,7 @@ export async function apiFetch<T>(
   }
 
   try {
-    const json = await res.json() as ApiResponse<T>;
+    const json = (await res.json()) as ApiResponse<T>;
     return json;
   } catch (error) {
     console.error(`Failed to parse response from ${path}:`, error);

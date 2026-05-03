@@ -34,7 +34,7 @@ export class Booking {
   @Column({ name: 'customer_email' })
   customerEmail: string;
 
-  @Column({ name: 'customer_phone', nullable: true })
+  @Column({ name: 'customer_phone', type: 'varchar', length: 20, nullable: true })
   customerPhone: string | null;
 
   @Column({ type: 'enum', enum: BookingStatus, default: BookingStatus.INQUIRY })
@@ -58,7 +58,7 @@ export class Booking {
   @Column({ name: 'special_requests', type: 'text', nullable: true })
   specialRequests: string | null;
 
-  @Column({ name: 'assigned_to', nullable: true })
+  @Column({ name: 'assigned_to', type: 'uuid', nullable: true })
   assignedTo: string | null;
 
   @OneToMany(() => BookingItem, (item) => item.booking, { cascade: true })

@@ -5,12 +5,14 @@ import {
   Patch,
   Body,
   UseGuards,
+  Req,
   Res,
   HttpCode,
   HttpStatus,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto, SendOtpDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -52,8 +54,17 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token' })
-  async refresh(@Body() dto: RefreshDto, @Res({ passthrough: true }) res: Response) {
-    const tokens = await this.authService.refresh(dto.refreshToken);
+  async refresh(
+    @Body() dto: RefreshDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    // Prefer HttpOnly cookie; fall back to body for backward compatibility / testing.
+    const token = req.cookies?.refresh_token || dto.refreshToken;
+    if (!token) {
+      throw new UnauthorizedException('Missing refresh token');
+    }
+    const tokens = await this.authService.refresh(token);
     this.setRefreshCookie(res, tokens.refreshToken);
     return ok({ accessToken: tokens.accessToken });
   }

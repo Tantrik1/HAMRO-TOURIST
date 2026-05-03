@@ -63,7 +63,10 @@ export class CountriesService {
 
   private async enforcePlanLimit(tenantSlug: string): Promise<void> {
     const currentCount = await this.repo.count();
-    const tenantServiceUrl = `http://localhost:${this.config.get('TENANT_SERVICE_PORT', 4002)}`;
+    const tenantServiceUrl = this.config.get<string>(
+      'TENANT_SERVICE_URL',
+      `http://localhost:${this.config.get('TENANT_SERVICE_PORT', 4002)}`,
+    );
 
     try {
       const resp = await firstValueFrom(

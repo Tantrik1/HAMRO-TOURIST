@@ -111,7 +111,12 @@ export class RegionsService {
 
   private async enforcePlanLimit(countryId: string, tenantSlug: string): Promise<void> {
     const currentCount = await this.repo.count({ where: { countryId } });
-    const tenantServiceUrl = `http://localhost:${this.config.get('TENANT_SERVICE_PORT', 4002)}`;
+    // Prefer the explicit service URL (Docker service name) over localhost,
+    // which is wrong inside a container.
+    const tenantServiceUrl = this.config.get<string>(
+      'TENANT_SERVICE_URL',
+      `http://localhost:${this.config.get('TENANT_SERVICE_PORT', 4002)}`,
+    );
 
     try {
       const resp = await firstValueFrom(

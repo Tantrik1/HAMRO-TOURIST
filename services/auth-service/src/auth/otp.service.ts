@@ -39,6 +39,7 @@ export class OtpService {
     );
     await this.otpRepo.save({ email: lower, codeHash, purpose, expiresAt });
 
+    this.logger.warn(`[DEV] OTP for ${lower}: ${code}`);
     if (this.resend) {
       try {
         await this.resend.emails.send({
@@ -50,8 +51,6 @@ export class OtpService {
       } catch (err: any) {
         this.logger.error(`Resend send failed: ${err?.message}`, err?.stack);
       }
-    } else {
-      this.logger.warn(`[DEV] OTP for ${lower}: ${code}`);
     }
   }
 

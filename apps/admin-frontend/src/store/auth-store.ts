@@ -26,7 +26,7 @@ interface AuthState {
     otp: string;
   }) => Promise<{ success: boolean; error?: string }>;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
+  logout: () => Promise<void>;
   loadUser: () => Promise<void>;
   setUser: (user: User) => void;
 }
@@ -68,7 +68,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     return { success: false, error: res.error.message };
   },
 
-  logout: () => {
+  logout: async () => {
+    // Best-effort: revoke refresh tokens server-side. Always clear local state regardless.
+    try {
+      await apiPost('/auth/logout', {});
+    } catch (err) {
+      console.warn('Server logout failed (continuing):', err);
+    }
     clearTokens();
     set({ user: null, isAuthenticated: false });
     if (typeof window !== 'undefined') window.location.href = '/auth?mode=login';

@@ -22,8 +22,10 @@ export class TenantContextInterceptor implements NestInterceptor {
     const schema = `tenant_${slug.replace(/-/g, '_')}`;
 
     try {
-      // ✅ Use parameterized query (TypeORM handles escaping)
-      await this.dataSource.query(`SET search_path TO $1`, [schema]);
+      // PostgreSQL does not support parameter placeholders in SET commands.
+      // The schema identifier is derived from a regex-validated slug above, so interpolating
+      // into a quoted identifier is safe here.
+      await this.dataSource.query(`SET search_path TO "${schema}"`);
     } catch (error) {
       this.logger.error(`Failed to set schema for ${slug}:`, error);
       throw new InternalServerErrorException('Database configuration error');

@@ -1,6 +1,6 @@
-import { Controller, All, Req, Param, HttpException } from '@nestjs/common';
+import { Controller, All, Req, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { ProxyService } from './proxy.service';
 
 @ApiTags('Proxy')
@@ -8,76 +8,70 @@ import { ProxyService } from './proxy.service';
 export class ProxyController {
   constructor(private readonly proxyService: ProxyService) {}
 
-  @All('api/auth/*')
-  @ApiOperation({ summary: 'Proxy to Auth Service' })
-  async proxyAuth(@Req() req: Request) {
-    return this.forward('auth', req);
-  }
+  // Auth
+  @All('auth') async proxyAuthRoot(@Req() req: Request, @Res() res: Response) { return this.forward('auth', req, res); }
+  @All('auth/*') @ApiOperation({ summary: 'Proxy to Auth Service' })
+  async proxyAuth(@Req() req: Request, @Res() res: Response) { return this.forward('auth', req, res); }
 
-  @All('api/tenants/*')
-  @ApiOperation({ summary: 'Proxy to Tenant Service' })
-  async proxyTenants(@Req() req: Request) {
-    return this.forward('tenants', req);
-  }
+  // Tenants
+  @All('tenants') async proxyTenantsRoot(@Req() req: Request, @Res() res: Response) { return this.forward('tenants', req, res); }
+  @All('tenants/*') @ApiOperation({ summary: 'Proxy to Tenant Service' })
+  async proxyTenants(@Req() req: Request, @Res() res: Response) { return this.forward('tenants', req, res); }
 
-  @All('api/products/*')
-  @ApiOperation({ summary: 'Proxy to Product Service' })
-  async proxyProducts(@Req() req: Request) {
-    return this.forward('products', req);
-  }
+  // Products
+  @All('products') async proxyProductsRoot(@Req() req: Request, @Res() res: Response) { return this.forward('products', req, res); }
+  @All('products/*') @ApiOperation({ summary: 'Proxy to Product Service' })
+  async proxyProducts(@Req() req: Request, @Res() res: Response) { return this.forward('products', req, res); }
 
-  @All('api/websites/*')
-  @ApiOperation({ summary: 'Proxy to Website Builder Service' })
-  async proxyWebsites(@Req() req: Request) {
-    return this.forward('websites', req);
-  }
+  // Websites
+  @All('websites') async proxyWebsitesRoot(@Req() req: Request, @Res() res: Response) { return this.forward('websites', req, res); }
+  @All('websites/*') @ApiOperation({ summary: 'Proxy to Website Builder Service' })
+  async proxyWebsites(@Req() req: Request, @Res() res: Response) { return this.forward('websites', req, res); }
 
-  @All('api/media/*')
-  @ApiOperation({ summary: 'Proxy to Media Service' })
-  async proxyMedia(@Req() req: Request) {
-    return this.forward('media', req);
-  }
+  // Media
+  @All('media') async proxyMediaRoot(@Req() req: Request, @Res() res: Response) { return this.forward('media', req, res); }
+  @All('media/*') @ApiOperation({ summary: 'Proxy to Media Service' })
+  async proxyMedia(@Req() req: Request, @Res() res: Response) { return this.forward('media', req, res); }
 
-  @All('api/domains/*')
-  @ApiOperation({ summary: 'Proxy to Domain Service' })
-  async proxyDomains(@Req() req: Request) {
-    return this.forward('domains', req);
-  }
+  // Domains
+  @All('domains') async proxyDomainsRoot(@Req() req: Request, @Res() res: Response) { return this.forward('domains', req, res); }
+  @All('domains/*') @ApiOperation({ summary: 'Proxy to Domain Service' })
+  async proxyDomains(@Req() req: Request, @Res() res: Response) { return this.forward('domains', req, res); }
 
-  @All('api/crm/*')
-  @ApiOperation({ summary: 'Proxy to CRM Service' })
-  async proxyCrm(@Req() req: Request) {
-    return this.forward('crm', req);
-  }
+  // CRM
+  @All('crm') async proxyCrmRoot(@Req() req: Request, @Res() res: Response) { return this.forward('crm', req, res); }
+  @All('crm/*') @ApiOperation({ summary: 'Proxy to CRM Service' })
+  async proxyCrm(@Req() req: Request, @Res() res: Response) { return this.forward('crm', req, res); }
 
-  @All('notifications/*')
-  @ApiOperation({ summary: 'Proxy to Notification Service' })
-  async proxyNotifications(@Req() req: Request) {
-    return this.forward('notifications', req);
-  }
+  // Notifications
+  @All('notifications') async proxyNotificationsRoot(@Req() req: Request, @Res() res: Response) { return this.forward('notifications', req, res); }
+  @All('notifications/*') @ApiOperation({ summary: 'Proxy to Notification Service' })
+  async proxyNotifications(@Req() req: Request, @Res() res: Response) { return this.forward('notifications', req, res); }
 
-  @All('billing/*')
-  @ApiOperation({ summary: 'Proxy to Billing Service' })
-  async proxyBilling(@Req() req: Request) {
-    return this.forward('billing', req);
-  }
+  // Billing
+  @All('billing') async proxyBillingRoot(@Req() req: Request, @Res() res: Response) { return this.forward('billing', req, res); }
+  @All('billing/*') @ApiOperation({ summary: 'Proxy to Billing Service' })
+  async proxyBilling(@Req() req: Request, @Res() res: Response) { return this.forward('billing', req, res); }
 
-  @All('bookings/*')
-  @ApiOperation({ summary: 'Proxy to Booking Service' })
-  async proxyBookings(@Req() req: Request) {
-    return this.forward('bookings', req);
-  }
+  // Bookings
+  @All('bookings') async proxyBookingsRoot(@Req() req: Request, @Res() res: Response) { return this.forward('bookings', req, res); }
+  @All('bookings/*') @ApiOperation({ summary: 'Proxy to Booking Service' })
+  async proxyBookings(@Req() req: Request, @Res() res: Response) { return this.forward('bookings', req, res); }
 
-  private async forward(service: string, req: Request) {
+  private async forward(service: string, req: Request, res: Response): Promise<void> {
     try {
-      return await this.proxyService.forward(service, req);
+      const upstream = await this.proxyService.forward(service, req);
+      if (upstream.setCookie?.length) {
+        res.setHeader('Set-Cookie', upstream.setCookie);
+      }
+      res.status(upstream.status).json(upstream.data);
     } catch (error: any) {
-      const status = error.response?.status || 500;
+      const status = error.response?.status || 502;
       const data = error.response?.data || {
         success: false,
-        error: { code: 'GATEWAY_ERROR', message: error.message },
+        error: { code: 'GATEWAY_ERROR', message: error.message || 'Upstream service unreachable' },
       };
-      throw new HttpException(data, status);
+      res.status(status).json(data);
     }
   }
 }
