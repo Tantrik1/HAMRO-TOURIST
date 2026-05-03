@@ -9,9 +9,7 @@
       "Bash(done)",
       "Bash(cd:*)",
       "Bash(pnpm install:*)",
-<<<<<<< HEAD
-      "Bash(find 'C:\\\\Users\\\\ACER\\\\Documents\\\\Hamro Tourist' -name .env* -o -name *.env)"
-=======
+      "Bash(find 'C:\\\\Users\\\\ACER\\\\Documents\\\\Hamro Tourist' -name .env* -o -name *.env)",
       "Bash(xargs -I {} sh -c 'echo \"=== {} ===\" && head -15 {}')",
       "Bash(xargs ls *)",
       "Bash(openssl genrsa *)",
@@ -109,8 +107,8 @@
       "Bash(ssh-keygen -t ed25519 -C \"claudetantrik@gmail.com\" -f ~/.ssh/id_ed25519 -N \"\")",
       "Read(//home/ubuntu/.ssh/**)",
       "Bash(gh repo *)",
-      "Bash(export GIT_TRACE=1)"
->>>>>>> dddb6e3e928714d774d3b71754d0db49dd409e59
+      "Bash(export GIT_TRACE=1)",
+      "Bash(python3 -m json.tool /home/ubuntu/HAMRO-TOURIST/.claude/settings.local.json)"
     ]
   }
 }
