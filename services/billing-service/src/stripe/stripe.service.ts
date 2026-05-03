@@ -11,7 +11,7 @@ export class StripeService {
 
   constructor(private config: ConfigService) {
     this.stripe = new Stripe(this.config.getOrThrow('STRIPE_SECRET_KEY'), {
-      apiVersion: '2025-04-30.basil',
+      apiVersion: '2025-02-24.acacia',
     });
 
     this.priceMap = {
