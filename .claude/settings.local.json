@@ -93,7 +93,20 @@
       "Bash(pnpm build *)",
       "Bash(docker exec docker-postgres-1 *)",
       "Bash(docker exec *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(sudo dd *)",
+      "Bash(dpkg --print-architecture)",
+      "Bash(echo \"deb [arch=$\\(dpkg --print-architecture\\) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main\")",
+      "Bash(sudo apt *)",
+      "Bash(git config *)",
+      "Bash(git remote *)",
+      "Bash(gh ssh-key *)",
+      "Bash(ssh-keygen -t ed25519 -C \"claudetantrik@gmail.com\" -f ~/.ssh/id_ed25519 -N \"\")",
+      "Read(//home/ubuntu/.ssh/**)",
+      "Bash(gh repo *)",
+      "Bash(export GIT_TRACE=1)"
     ]
   }
 }
