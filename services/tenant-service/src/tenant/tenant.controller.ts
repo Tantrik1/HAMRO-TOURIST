@@ -5,6 +5,7 @@ import {
   Patch,
   Param,
   Body,
+  Headers,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { TenantService } from './tenant.service';
@@ -20,10 +21,20 @@ export class TenantController {
   @Post()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new tenant (agency)' })
-  async create(@Body() dto: CreateTenantDto) {
-    // In production, ownerUserId comes from JWT. For now, accept from header.
-    const tenant = await this.tenantService.create(dto, 'placeholder-user-id');
+  async create(
+    @Body() dto: CreateTenantDto,
+    @Headers('x-user-id') xUserId?: string,
+  ) {
+    const ownerUserId = dto.ownerUserId || xUserId || 'placeholder-user-id';
+    const tenant = await this.tenantService.create(dto, ownerUserId);
     return ok(tenant);
+  }
+
+  @Get('published')
+  @ApiOperation({ summary: 'List all published tenants (for renderer)' })
+  async listPublished() {
+    const tenants = await this.tenantService.listAllPublished();
+    return ok(tenants);
   }
 
   @Get(':slug')
@@ -38,6 +49,30 @@ export class TenantController {
   async getLimits(@Param('slug') slug: string) {
     const limits = await this.tenantService.getLimits(slug);
     return ok(limits);
+  }
+
+  @Patch(':slug/onboarding')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update onboarding details' })
+  async updateOnboarding(@Param('slug') slug: string, @Body() body: any) {
+    const tenant = await this.tenantService.updateOnboarding(slug, body);
+    return ok(tenant);
+  }
+
+  @Patch(':slug/theme')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Set active theme for tenant' })
+  async setTheme(@Param('slug') slug: string, @Body('themeSlug') themeSlug: string) {
+    const tenant = await this.tenantService.setTheme(slug, themeSlug);
+    return ok(tenant);
+  }
+
+  @Post(':slug/publish')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Publish tenant website' })
+  async publish(@Param('slug') slug: string) {
+    const tenant = await this.tenantService.publish(slug);
+    return ok(tenant);
   }
 
   @Patch(':slug/plan')

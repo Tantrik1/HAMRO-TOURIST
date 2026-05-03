@@ -8,43 +8,43 @@ import { ProxyService } from './proxy.service';
 export class ProxyController {
   constructor(private readonly proxyService: ProxyService) {}
 
-  @All('auth/*')
+  @All('api/auth/*')
   @ApiOperation({ summary: 'Proxy to Auth Service' })
   async proxyAuth(@Req() req: Request) {
     return this.forward('auth', req);
   }
 
-  @All('tenants/*')
+  @All('api/tenants/*')
   @ApiOperation({ summary: 'Proxy to Tenant Service' })
   async proxyTenants(@Req() req: Request) {
     return this.forward('tenants', req);
   }
 
-  @All('products/*')
+  @All('api/products/*')
   @ApiOperation({ summary: 'Proxy to Product Service' })
   async proxyProducts(@Req() req: Request) {
     return this.forward('products', req);
   }
 
-  @All('websites/*')
+  @All('api/websites/*')
   @ApiOperation({ summary: 'Proxy to Website Builder Service' })
   async proxyWebsites(@Req() req: Request) {
     return this.forward('websites', req);
   }
 
-  @All('media/*')
+  @All('api/media/*')
   @ApiOperation({ summary: 'Proxy to Media Service' })
   async proxyMedia(@Req() req: Request) {
     return this.forward('media', req);
   }
 
-  @All('domains/*')
+  @All('api/domains/*')
   @ApiOperation({ summary: 'Proxy to Domain Service' })
   async proxyDomains(@Req() req: Request) {
     return this.forward('domains', req);
   }
 
-  @All('crm/*')
+  @All('api/crm/*')
   @ApiOperation({ summary: 'Proxy to CRM Service' })
   async proxyCrm(@Req() req: Request) {
     return this.forward('crm', req);

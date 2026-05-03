@@ -56,7 +56,11 @@ export class TenantService {
       companyName: dto.companyName,
       planId: freePlan.id,
       schemaName,
-      ownerUserId,
+      ownerUserId: dto.ownerUserId || ownerUserId,
+      yearEstablished: dto.yearEstablished ?? null,
+      aboutCompany: dto.aboutCompany ?? null,
+      countriesServed: dto.countriesServed ?? null,
+      onboardingCompleted: !!(dto.yearEstablished && dto.aboutCompany && dto.countriesServed),
     });
     await this.tenantRepo.save(tenant);
 
@@ -96,6 +100,47 @@ export class TenantService {
       canUseCustomHtml: plan.canUseCustomHtml,
       canAccessApi: plan.canAccessApi,
     };
+  }
+
+  async updateOnboarding(
+    slug: string,
+    data: {
+      companyName?: string;
+      yearEstablished?: number;
+      aboutCompany?: string;
+      countriesServed?: string[];
+    },
+  ): Promise<TenantEntity> {
+    const tenant = await this.findBySlug(slug);
+    if (data.companyName) tenant.companyName = data.companyName;
+    if (data.yearEstablished !== undefined) tenant.yearEstablished = data.yearEstablished;
+    if (data.aboutCompany !== undefined) tenant.aboutCompany = data.aboutCompany;
+    if (data.countriesServed !== undefined) tenant.countriesServed = data.countriesServed;
+    tenant.onboardingCompleted = !!(tenant.yearEstablished && tenant.aboutCompany && tenant.countriesServed?.length);
+    await this.tenantRepo.save(tenant);
+    return tenant;
+  }
+
+  async setTheme(slug: string, themeSlug: string): Promise<TenantEntity> {
+    const tenant = await this.findBySlug(slug);
+    tenant.themeSlug = themeSlug;
+    await this.tenantRepo.save(tenant);
+    return tenant;
+  }
+
+  async publish(slug: string): Promise<TenantEntity> {
+    const tenant = await this.findBySlug(slug);
+    if (!tenant.themeSlug) {
+      throw new ConflictException('Pick a theme before publishing');
+    }
+    tenant.published = true;
+    tenant.publishedAt = new Date();
+    await this.tenantRepo.save(tenant);
+    return tenant;
+  }
+
+  async listAllPublished(): Promise<TenantEntity[]> {
+    return this.tenantRepo.find({ where: { published: true } });
   }
 
   async updatePlan(slug: string, dto: UpdateTenantPlanDto): Promise<TenantEntity> {

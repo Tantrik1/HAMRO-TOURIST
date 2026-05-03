@@ -21,7 +21,7 @@ export class WebsiteService {
     private readonly config: ConfigService,
     private readonly httpService: HttpService,
   ) {
-    this.redis = new Redis(this.config.get('REDIS_URL', 'redis://localhost:6379'));
+    this.redis = new Redis(this.config.get<string>('REDIS_URL', 'redis://localhost:6379') as string);
   }
 
   async getConfig(tenantSlug: string): Promise<WebsiteConfigEntity> {

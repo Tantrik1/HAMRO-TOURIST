@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { SnakeNamingStrategy } from '@hamrotourist/shared-types';
 import { TenantModule } from './tenant/tenant.module';
 import { AdminModule } from './admin/admin.module';
 import { TenantEntity } from './entities/tenant.entity';
@@ -24,6 +25,7 @@ import { AuditLogEntity } from './entities/audit-log.entity';
         entities: [TenantEntity, PlanEntity, SystemSettingEntity, AuditLogEntity],
         synchronize: false,
         schema: 'public',
+        namingStrategy: new SnakeNamingStrategy(),
       }),
     }),
     TenantModule,

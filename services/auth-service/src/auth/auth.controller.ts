@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Body,
   UseGuards,
   Res,
@@ -11,7 +12,7 @@ import {
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
+import { RegisterDto, SendOtpDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -23,21 +24,29 @@ import { ok } from '@hamrotourist/shared-types';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Post('send-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send registration OTP to email' })
+  async sendOtp(@Body() dto: SendOtpDto) {
+    await this.authService.startRegistration(dto.email);
+    return ok({ message: 'OTP sent' });
+  }
+
   @Post('register')
-  @ApiOperation({ summary: 'Register a new user' })
+  @ApiOperation({ summary: 'Register a new user with OTP verification' })
   async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
-    const tokens = await this.authService.register(dto);
-    this.setRefreshCookie(res, tokens.refreshToken);
-    return ok({ accessToken: tokens.accessToken });
+    const result = await this.authService.register(dto);
+    this.setRefreshCookie(res, result.refreshToken);
+    return ok({ accessToken: result.accessToken, user: result.user });
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with email and password' })
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
-    const tokens = await this.authService.login(dto);
-    this.setRefreshCookie(res, tokens.refreshToken);
-    return ok({ accessToken: tokens.accessToken });
+    const result = await this.authService.login(dto);
+    this.setRefreshCookie(res, result.refreshToken);
+    return ok({ accessToken: result.accessToken, user: result.user });
   }
 
   @Post('refresh')
@@ -80,12 +89,24 @@ export class AuthController {
     });
   }
 
+  @Patch('tenant')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Assign tenant slug to current user (internal-style)' })
+  async assignTenant(
+    @CurrentUser('id') userId: string,
+    @Body('tenantSlug') tenantSlug: string,
+  ) {
+    const user = await this.authService.assignTenant(userId, tenantSlug);
+    return ok({ tenantSlug: user.tenantSlug });
+  }
+
   private setRefreshCookie(res: Response, token: string) {
     res.cookie('refresh_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      maxAge: 30 * 24 * 60 * 60 * 1000,
       path: '/',
     });
   }

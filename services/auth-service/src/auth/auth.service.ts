@@ -2,18 +2,20 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThan } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { UserEntity } from '../entities/user.entity';
 import { RefreshTokenEntity } from '../entities/refresh-token.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { OtpService } from './otp.service';
 import type { JwtPayload, AuthTokens } from '@hamrotourist/shared-types';
 
 @Injectable()
@@ -28,31 +30,58 @@ export class AuthService {
     private readonly refreshTokenRepo: Repository<RefreshTokenEntity>,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly otpService: OtpService,
   ) {}
 
-  async register(dto: RegisterDto): Promise<AuthTokens> {
+  async startRegistration(email: string): Promise<void> {
+    const existing = await this.userRepo.findOne({
+      where: { email: email.toLowerCase() },
+    });
+    if (existing && existing.isEmailVerified) {
+      throw new ConflictException('Email already registered');
+    }
+    await this.otpService.sendOtp(email, 'register');
+  }
+
+  async register(dto: RegisterDto): Promise<AuthTokens & { user: { id: string; email: string; firstName: string; lastName: string; isEmailVerified: boolean; tenantSlug: string | null } }> {
+    const verified = await this.otpService.verifyOtp(dto.email, dto.otp, 'register');
+    if (!verified) {
+      throw new BadRequestException({ code: 'INVALID_OTP', message: 'Invalid or expired verification code' });
+    }
+
     const existing = await this.userRepo.findOne({
       where: { email: dto.email.toLowerCase() },
     });
     if (existing) {
-      throw new ConflictException('Email already registered');
+      if (existing.isEmailVerified) {
+        throw new ConflictException('Email already registered');
+      }
+      // Update unverified user record
+      existing.firstName = dto.firstName;
+      existing.lastName = dto.lastName;
+      existing.passwordHash = await bcrypt.hash(dto.password, this.SALT_ROUNDS);
+      existing.isEmailVerified = true;
+      await this.userRepo.save(existing);
+      this.logger.log(`User re-registered & verified: ${existing.email}`);
+      const tokens = await this.generateTokens(existing);
+      return { ...tokens, user: this.publicUser(existing) };
     }
 
     const passwordHash = await bcrypt.hash(dto.password, this.SALT_ROUNDS);
-
     const user = this.userRepo.create({
       email: dto.email.toLowerCase(),
       passwordHash,
       firstName: dto.firstName,
       lastName: dto.lastName,
+      isEmailVerified: true,
     });
     await this.userRepo.save(user);
-
     this.logger.log(`User registered: ${user.email}`);
-    return this.generateTokens(user);
+    const tokens = await this.generateTokens(user);
+    return { ...tokens, user: this.publicUser(user) };
   }
 
-  async login(dto: LoginDto): Promise<AuthTokens> {
+  async login(dto: LoginDto): Promise<AuthTokens & { user: { id: string; email: string; firstName: string; lastName: string; isEmailVerified: boolean; tenantSlug: string | null } }> {
     const user = await this.userRepo.findOne({
       where: { email: dto.email.toLowerCase() },
     });
@@ -66,35 +95,39 @@ export class AuthService {
     }
 
     this.logger.log(`User logged in: ${user.email}`);
-    return this.generateTokens(user);
+    const tokens = await this.generateTokens(user);
+    return { ...tokens, user: this.publicUser(user) };
   }
 
   async refresh(refreshToken: string): Promise<AuthTokens> {
-    const tokenHash = await bcrypt.hash(refreshToken, this.SALT_ROUNDS);
+    // Get unexpired, non-revoked tokens for this user from refresh token metadata
+    // Store token prefix in DB to identify the right token without loading all
+    const tokenPrefix = refreshToken.slice(0, 16);
 
-    // Find non-revoked, non-expired refresh tokens for lookup
-    const storedTokens = await this.refreshTokenRepo.find({
-      where: { isRevoked: false },
+    const matchedToken = await this.refreshTokenRepo.findOne({
+      where: {
+        tokenPrefix,
+        isRevoked: false,
+        expiresAt: MoreThan(new Date()),
+      },
       relations: ['user'],
     });
 
-    let matchedToken: RefreshTokenEntity | null = null;
-    for (const stored of storedTokens) {
-      const isMatch = await bcrypt.compare(refreshToken, stored.tokenHash);
-      if (isMatch && stored.expiresAt > new Date()) {
-        matchedToken = stored;
-        break;
-      }
+    if (!matchedToken) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    if (!matchedToken) {
+    // Verify the full token hash matches
+    const isMatch = await bcrypt.compare(refreshToken, matchedToken.tokenHash);
+    if (!isMatch) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    // Revoke old token (rotation)
+    // Revoke the old token (rotation)
     matchedToken.isRevoked = true;
     await this.refreshTokenRepo.save(matchedToken);
 
+    this.logger.log(`Token refreshed for user: ${matchedToken.user.email}`);
     return this.generateTokens(matchedToken.user);
   }
 
@@ -114,6 +147,24 @@ export class AuthService {
     return user;
   }
 
+  async assignTenant(userId: string, tenantSlug: string): Promise<UserEntity> {
+    const user = await this.getProfile(userId);
+    user.tenantSlug = tenantSlug;
+    await this.userRepo.save(user);
+    return user;
+  }
+
+  private publicUser(user: UserEntity) {
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      isEmailVerified: user.isEmailVerified,
+      tenantSlug: user.tenantSlug,
+    };
+  }
+
   private async generateTokens(user: UserEntity): Promise<AuthTokens> {
     const payload: JwtPayload = {
       sub: user.id,
@@ -126,13 +177,19 @@ export class AuthService {
 
     const refreshToken = uuidv4();
     const refreshHash = await bcrypt.hash(refreshToken, this.SALT_ROUNDS);
-    const refreshExpiry = this.config.get('JWT_REFRESH_EXPIRY', '30d');
+
+    // Parse refresh token expiry from config (default: 30 days)
+    const refreshExpiryDays = parseInt(this.config.get('JWT_REFRESH_EXPIRY_DAYS', '30'), 10) || 30;
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + parseInt(refreshExpiry) || 30);
+    expiresAt.setDate(expiresAt.getDate() + refreshExpiryDays);
+
+    // Store token prefix for efficient lookup
+    const tokenPrefix = refreshToken.slice(0, 16);
 
     await this.refreshTokenRepo.save({
       userId: user.id,
       tokenHash: refreshHash,
+      tokenPrefix,
       expiresAt,
     });
 

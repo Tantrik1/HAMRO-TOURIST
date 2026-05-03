@@ -1,19 +1,51 @@
-version: '3.8'
 
+networks:
+  hamrotourist:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  networks: [hamrotourist]
+  env_file: ../../.env
+  environment:
+    # Override localhost values from .env with docker service names
+    DATABASE_HOST: postgres
+    DB_HOST: postgres
+    DB_USER: hamrotourist
+    DB_PASSWORD: 428493e3b14ffe9feace7e3ab6a62c1df0a23559
+    DB_NAME: hamrotourist
+    DB_PORT: 5432
+    REDIS_URL: redis://redis:6379
+    REDIS_HOST: redis
+    REDIS_PORT: 6379
+
+x-nextjs-defaults: &nextjs-defaults
+  restart: unless-stopped
+  networks: [hamrotourist]
+  env_file: ../../.env
+
+# ============================================================
+# INFRASTRUCTURE
+# ============================================================
 services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    networks: [hamrotourist]
     environment:
-      POSTGRES_USER: ${DATABASE_USER}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: hamrotourist
+      POSTGRES_PASSWORD: 428493e3b14ffe9feace7e3ab6a62c1df0a23559
+      POSTGRES_DB: hamrotourist
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U hamrotourist"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -21,45 +53,221 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    networks: [hamrotourist]
+    command: redis-server --appendonly yes
     ports:
       - "127.0.0.1:6379:6379"
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+# ============================================================
+# NESTJS MICROSERVICES
+# ============================================================
   api-gateway:
+    <<: *service-defaults
     build:
       context: ../../
-      dockerfile: services/api-gateway/Dockerfile
-    restart: unless-stopped
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_NAME: api-gateway
+        SERVICE_PORT: 4000
+    image: hamrotourist/api-gateway:latest
     ports:
       - "127.0.0.1:4000:4000"
-    env_file: ../../.env
+    environment:
+      DATABASE_HOST: postgres
+      REDIS_URL: redis://redis:6379
+      AUTH_SERVICE_URL: http://auth-service:4001
+      TENANT_SERVICE_URL: http://tenant-service:4002
+      PRODUCT_SERVICE_URL: http://product-service:4003
+      WEBSITE_BUILDER_SERVICE_URL: http://website-builder-service:4004
+      MEDIA_SERVICE_URL: http://media-service:4005
+      DOMAIN_SERVICE_URL: http://domain-service:4006
+      CRM_SERVICE_URL: http://crm-service:4007
+      NOTIFICATION_SERVICE_URL: http://notification-service:4008
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   auth-service:
+    <<: *service-defaults
     build:
       context: ../../
-      dockerfile: services/auth-service/Dockerfile
-    restart: unless-stopped
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_NAME: auth-service
+        SERVICE_PORT: 4001
+    image: hamrotourist/auth-service:latest
     ports:
       - "127.0.0.1:4001:4001"
-    env_file: ../../.env
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   tenant-service:
+    <<: *service-defaults
     build:
       context: ../../
-      dockerfile: services/tenant-service/Dockerfile
-    restart: unless-stopped
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_NAME: tenant-service
+        SERVICE_PORT: 4002
+    image: hamrotourist/tenant-service:latest
     ports:
       - "127.0.0.1:4002:4002"
-    env_file: ../../.env
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
-volumes:
-  postgres-data:
-  redis-data:
+  product-service:
+    <<: *service-defaults
+    build:
+      context: ../../
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_NAME: product-service
+        SERVICE_PORT: 4003
+    image: hamrotourist/product-service:latest
+    ports:
+      - "127.0.0.1:4003:4003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  website-builder-service:
+    <<: *service-defaults
+    build:
+      context: ../../
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_NAME: website-builder-service
+        SERVICE_PORT: 4004
+    image: hamrotourist/website-builder-service:latest
+    ports:
+      - "127.0.0.1:4004:4004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  media-service:
+    <<: *service-defaults
+    build:
+      context: ../../
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_NAME: media-service
+        SERVICE_PORT: 4005
+    image: hamrotourist/media-service:latest
+    ports:
+      - "127.0.0.1:4005:4005"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  domain-service:
+    <<: *service-defaults
+    build:
+      context: ../../
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_NAME: domain-service
+        SERVICE_PORT: 4006
+    image: hamrotourist/domain-service:latest
+    ports:
+      - "127.0.0.1:4006:4006"
+    environment:
+      DATABASE_HOST: postgres
+      DB_HOST: postgres
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  crm-service:
+    <<: *service-defaults
+    build:
+      context: ../../
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_NAME: crm-service
+        SERVICE_PORT: 4007
+    image: hamrotourist/crm-service:latest
+    ports:
+      - "127.0.0.1:4007:4007"
+    environment:
+      DATABASE_HOST: postgres
+      DB_HOST: postgres
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  notification-service:
+    <<: *service-defaults
+    build:
+      context: ../../
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_NAME: notification-service
+        SERVICE_PORT: 4008
+    image: hamrotourist/notification-service:latest
+    ports:
+      - "127.0.0.1:4008:4008"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+# ============================================================
+# NEXT.JS FRONTEND APPS
+# ============================================================
+  admin-frontend:
+    <<: *nextjs-defaults
+    build:
+      context: ../../
+      dockerfile: Dockerfile.app
+      args:
+        APP_NAME: admin-frontend
+        APP_PORT: 3000
+        NEXT_PUBLIC_API_URL: https://api.hamrotourist.com
+    image: hamrotourist/admin-frontend:latest
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  website-renderer:
+    <<: *nextjs-defaults
+    build:
+      context: ../../
+      dockerfile: Dockerfile.app
+      args:
+        APP_NAME: website-renderer
+        APP_PORT: 3001
+        NEXT_PUBLIC_API_URL: https://api.hamrotourist.com
+    image: hamrotourist/website-renderer:latest
+    ports:
+      - "127.0.0.1:3001:3001"
+
+  marketing-site:
+    <<: *nextjs-defaults
+    build:
+      context: ../../
+      dockerfile: Dockerfile.app
+      args:
+        APP_NAME: marketing-site
+        APP_PORT: 3002
+        NEXT_PUBLIC_API_URL: https://api.hamrotourist.com
+    image: hamrotourist/marketing-site:latest
+    ports:
+      - "127.0.0.1:3002:3002"

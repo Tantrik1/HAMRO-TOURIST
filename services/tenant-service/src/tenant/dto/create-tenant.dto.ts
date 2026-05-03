@@ -1,5 +1,15 @@
-import { IsString, MinLength, MaxLength, Matches } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsString,
+  IsArray,
+  IsInt,
+  IsOptional,
+  Min,
+  Max,
+  MinLength,
+  MaxLength,
+  Matches,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateTenantDto {
   @ApiProperty({ example: 'Acme Travels' })
@@ -16,4 +26,28 @@ export class CreateTenantDto {
     message: 'Slug must be lowercase alphanumeric with hyphens, not starting/ending with hyphen',
   })
   slug: string;
+
+  @ApiPropertyOptional({ example: 2018 })
+  @IsOptional()
+  @IsInt()
+  @Min(1900)
+  @Max(2100)
+  yearEstablished?: number;
+
+  @ApiPropertyOptional({ example: 'We are a family-run agency...' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  aboutCompany?: string;
+
+  @ApiPropertyOptional({ example: ['Nepal', 'Bhutan', 'India'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  countriesServed?: string[];
+
+  @ApiPropertyOptional({ example: '<uuid>', description: 'Owner user ID (set by gateway from JWT)' })
+  @IsOptional()
+  @IsString()
+  ownerUserId?: string;
 }

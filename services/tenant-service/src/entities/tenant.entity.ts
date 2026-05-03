@@ -63,6 +63,21 @@ export class TenantEntity {
   @Column({ name: 'owner_user_id', type: 'uuid' })
   ownerUserId: string;
 
+  @Column({ name: 'year_established', type: 'int', nullable: true })
+  yearEstablished: number | null;
+
+  @Column({ name: 'about_company', type: 'text', nullable: true })
+  aboutCompany: string | null;
+
+  @Column({ name: 'countries_served', type: 'text', array: true, nullable: true })
+  countriesServed: string[] | null;
+
+  @Column({ name: 'onboarding_completed', type: 'boolean', default: false })
+  onboardingCompleted: boolean;
+
+  @Column({ name: 'theme_slug', type: 'varchar', length: 64, nullable: true })
+  themeSlug: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

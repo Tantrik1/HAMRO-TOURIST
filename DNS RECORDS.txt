@@ -1,0 +1,55 @@
+;;
+;; Domain:     hamrotourist.com.
+;; Exported:   2026-05-02 18:40:49
+;;
+;; This file is intended for use for informational and archival
+;; purposes ONLY and MUST be edited before use on a production
+;; DNS server.  In particular, you must:
+;;   -- update the SOA record with the correct authoritative name server
+;;   -- update the SOA record with the contact e-mail address information
+;;   -- update the NS record(s) with the authoritative name servers for this domain.
+;;
+;; For further information, please consult the BIND documentation
+;; located on the following website:
+;;
+;; http://www.isc.org/
+;;
+;; And RFC 1035:
+;;
+;; http://www.ietf.org/rfc/rfc1035.txt
+;;
+;; Please note that we do NOT offer technical support for any use
+;; of this zone data, the BIND name server, or any other third-party
+;; DNS software.
+;;
+;; Use at your own risk.
+;; SOA Record
+hamrotourist.com	3600	IN	SOA	bryce.ns.cloudflare.com. dns.cloudflare.com. 2052941384 10000 2400 604800 3600
+
+;; NS Records
+hamrotourist.com.	86400	IN	NS	bryce.ns.cloudflare.com.
+hamrotourist.com.	86400	IN	NS	sreeni.ns.cloudflare.com.
+
+;; A Records
+admin.hamrotourist.com.	1	IN	A	172.188.49.88 ; cf_tags=cf-proxied:true
+api.hamrotourist.com.	1	IN	A	172.188.49.88 ; cf_tags=cf-proxied:true
+app.hamrotourist.com.	1	IN	A	172.188.49.88 ; cf_tags=cf-proxied:true
+*.hamrotourist.com.	1	IN	A	172.188.49.88 ; cf_tags=cf-proxied:true
+hamrotourist.com.	1	IN	A	172.188.49.88 ; cf_tags=cf-proxied:true
+proxy.hamrotourist.com.	1	IN	A	172.188.49.88 ; cf_tags=cf-proxied:true
+renderer.hamrotourist.com.	1	IN	A	172.188.49.88 ; cf_tags=cf-proxied:true
+
+;; CNAME Records
+media.hamrotourist.com.	1	IN	CNAME	public.r2.dev. ; cf_tags=cf-proxied:true
+
+;; MX Records
+hamrotourist.com.	3600	IN	MX	9 inbound-smtp.ap-northeast-1.amazonaws.com.
+send.hamrotourist.com.	3600	IN	MX	10 feedback-smtp.ap-northeast-1.amazonses.com.
+
+;; TXT Records
+hamrotourist.com.	3600	IN	TXT	"v=spf1 include:zohomail.com ~all"
+hamrotourist.com.	1	IN	TXT	"zoho-verification=zb67623740.zmverify.zoho.com"
+_lovable.hamrotourist.com.	3600	IN	TXT	"lovable_verify=72425b676a6a28804e34c86f940fc2c0093ee55d8eae2930fe77377d7ea96ac4"
+resend._domainkey.hamrotourist.com.	3600	IN	TXT	"p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC7uYppggHhUN+0+tIrH0tn9J0Aim0f+sJ25T9dyWoHT3+JQacoCwcwsnFkIz7NfIETkX11Y08L9E+Y130E2U7BnjELjEz1tMQjqjOXFCSA3lBD4uXW+kZ2Epk1C9cbzwR5cOwMdTVyyJR/OcCgwh+MSyuZUDmXTbd6aFF23tnuAwIDAQAB"
+send.hamrotourist.com.	3600	IN	TXT	"v=spf1 include:amazonses.com ~all"
+zmail._domainkey.hamrotourist.com.	600	IN	TXT	"v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCEoAECEkEG0dGDaLsO8MAGB5aXulke7HOb2dSfHFzFRb9Ry8+VBT/EU3XRWKpB6T8yRMd53BMCyWI29hcBzdJqhPWBexd1zl40nWrltnRIbSD5OoQruOJs2/zWytPrnfjHTBps2MpLq1l8HgyUYOuJwZaAA03yRIv5EE2irIMFbQIDAQAB"

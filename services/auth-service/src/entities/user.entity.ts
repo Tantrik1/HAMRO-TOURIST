@@ -18,7 +18,7 @@ export class UserEntity {
   @Index('idx_users_email')
   email: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ name: 'password_hash', type: 'varchar', length: 255 })
   passwordHash: string;
 
   @Column({ name: 'first_name', type: 'varchar', length: 100 })

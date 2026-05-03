@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { SnakeNamingStrategy } from '@hamrotourist/shared-types';
 import { Contact } from './entities/contact.entity';
 import { Lead } from './entities/lead.entity';
 import { ContactsModule } from './contacts/contacts.module';
@@ -20,6 +21,7 @@ import { LeadsModule } from './leads/leads.module';
         database: config.get('DB_NAME', 'hamrotourist'),
         entities: [Contact, Lead],
         synchronize: config.get('NODE_ENV') !== 'production',
+        namingStrategy: new SnakeNamingStrategy(),
       }),
     }),
     ContactsModule,

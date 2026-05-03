@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { SnakeNamingStrategy } from '@hamrotourist/shared-types';
 import { WebsiteModule } from './website/website.module';
 import { WebsiteConfigEntity } from './entities/website-config.entity';
 
@@ -19,6 +20,7 @@ import { WebsiteConfigEntity } from './entities/website-config.entity';
         database: config.get('DATABASE_NAME', 'hamrotourist'),
         entities: [WebsiteConfigEntity],
         synchronize: false,
+        namingStrategy: new SnakeNamingStrategy(),
       }),
     }),
     WebsiteModule,

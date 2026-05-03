@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { SnakeNamingStrategy } from '@hamrotourist/shared-types';
 import { CountriesModule } from './modules/countries/countries.module';
 import { RegionsModule } from './modules/regions/regions.module';
 import { ToursModule } from './modules/tours/tours.module';
@@ -33,6 +34,7 @@ import {
           ItineraryEntity, ItineraryDayEntity, ItineraryPricingEntity, GroupDiscountEntity,
         ],
         synchronize: false,
+        namingStrategy: new SnakeNamingStrategy(),
       }),
     }),
     CountriesModule,

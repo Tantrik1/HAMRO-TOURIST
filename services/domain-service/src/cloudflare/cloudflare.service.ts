@@ -38,7 +38,7 @@ export class CloudflareService {
           ssl: { method: 'http', type: 'dv', settings: { min_tls_version: '1.2' } },
         }),
       });
-      const json = await res.json();
+      const json = await res.json() as any;
       if (json.success) return json.result;
       this.logger.error('CF create failed', json.errors);
       return null;
@@ -53,7 +53,7 @@ export class CloudflareService {
       const res = await fetch(`${this.apiBase}/zones/${this.zoneId}/custom_hostnames/${hostnameId}`, {
         headers: this.headers,
       });
-      const json = await res.json();
+      const json = await res.json() as any;
       if (json.success) return json.result;
       return null;
     } catch {
@@ -67,7 +67,7 @@ export class CloudflareService {
         method: 'DELETE',
         headers: this.headers,
       });
-      const json = await res.json();
+      const json = await res.json() as any;
       return json.success;
     } catch {
       return false;

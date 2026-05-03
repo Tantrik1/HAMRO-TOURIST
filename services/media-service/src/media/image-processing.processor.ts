@@ -1,7 +1,7 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 import { QUEUES } from '@hamrotourist/shared-types';
 import { MediaService } from './media.service';
 

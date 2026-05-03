@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ht-violet: #7C3AED;
+  --ht-violet-light: #A78BFA;
+  --ht-violet-dark: #5B21B6;
+  --ht-coral: #F97316;
+  --ht-coral-light: #FB923C;
+  --ht-coral-dark: #EA580C;
+  --ht-cyan: #06B6D4;
+  --ht-cyan-light: #67E8F9;
+  --ht-lime: #84CC16;
+  --ht-rose: #F43F5E;
+  --ht-ink: #0A0A0F;
+  --ht-surface: #111118;
+  --ht-surface-2: #1A1A24;
+  --ht-border: #2A2A3A;
+  --ht-muted: #3D3D52;
+  --ht-text: #F1F0FF;
+  --ht-text-soft: #9B9BB8;
+  --ht-text-faint: #5C5C78;
+  --ht-grad-primary: linear-gradient(135deg, #7C3AED 0%, #06B6D4 100%);
+  --ht-grad-warm: linear-gradient(135deg, #F97316 0%, #F43F5E 100%);
+  --ht-grad-cool: linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%);
+  --ht-grad-lime: linear-gradient(135deg, #84CC16 0%, #06B6D4 100%);
+  --ht-grad-surface: linear-gradient(145deg, #1A1A24 0%, #111118 100%);
+  --ht-glow-violet: 0 0 40px rgba(124, 58, 237, 0.35);
+  --ht-glow-coral: 0 0 40px rgba(249, 115, 22, 0.35);
+  --ht-glow-cyan: 0 0 40px rgba(6, 182, 212, 0.35);
+}
+
+.light {
+  --ht-ink: #FAFAFA;
+  --ht-surface: #FFFFFF;
+  --ht-surface-2: #F4F4F8;
+  --ht-border: #E4E4EF;
+  --ht-muted: #C8C8D8;
+  --ht-text: #0A0A0F;
+  --ht-text-soft: #5C5C78;
+  --ht-text-faint: #9B9BB8;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--ht-ink);
+  color: var(--ht-text);
+  font-family: 'DM Sans', sans-serif;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

@@ -16,12 +16,13 @@ export class JwtValidationMiddleware implements NestMiddleware {
 
     const token = authHeader.slice(7);
     try {
-      const publicKey = this.config.get<string>('JWT_PUBLIC_KEY');
+      const rawKey = this.config.get<string>('JWT_PUBLIC_KEY');
+      const publicKey = rawKey ? Buffer.from(rawKey, 'base64').toString() : null;
       if (!publicKey) {
         return next();
       }
 
-      const decoded = jwt.verify(token, publicKey, {
+      const decoded = jwt.verify(token, publicKey!, {
         algorithms: ['RS256'],
       }) as JwtPayload;
 
