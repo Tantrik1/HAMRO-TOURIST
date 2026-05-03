@@ -1,17 +1,21 @@
 import {
   Entity, PrimaryGeneratedColumn, Column,
   CreateDateColumn, UpdateDateColumn, DeleteDateColumn,
-  ManyToOne, JoinColumn, OneToMany,
+  ManyToOne, JoinColumn, OneToMany, Index,
 } from 'typeorm';
 import { RegionEntity } from './region.entity';
 import { TourActivityEntity } from './tour-activity.entity';
 
 @Entity('tours')
+@Index(['slug'])  // ✅ Index for slug lookups
+@Index(['status'])  // ✅ Index for status filters
+@Index(['regionId'])  // ✅ Index for foreign key joins
 export class TourEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ name: 'region_id', type: 'uuid' })
+  @Index()  // ✅ Additional index decorator on column
   regionId: string;
 
   @ManyToOne(() => RegionEntity, (r) => r.tours, { onDelete: 'CASCADE' })
@@ -22,6 +26,7 @@ export class TourEntity {
   title: string;
 
   @Column({ type: 'varchar', length: 255, unique: true })
+  @Index()  // ✅ Index on slug
   slug: string;
 
   @Column({ type: 'text', nullable: true })
@@ -37,6 +42,7 @@ export class TourEntity {
   coverImageUrl: string | null;
 
   @Column({ type: 'varchar', length: 20, default: 'draft' })
+  @Index()  // ✅ Index on status
   status: string;
 
   @OneToMany(() => TourActivityEntity, (ta) => ta.tour)

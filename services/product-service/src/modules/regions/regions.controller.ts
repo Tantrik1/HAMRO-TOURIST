@@ -1,5 +1,6 @@
 import {
   Controller, Get, Post, Patch, Delete, Param, Body, Query, UseInterceptors,
+  ParseIntPipe, DefaultValuePipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiHeader } from '@nestjs/swagger';
 import { RegionsService } from './regions.service';
@@ -23,10 +24,28 @@ export class RegionsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all regions' })
-  async findAll(@Query('countryId') countryId?: string) {
-    if (countryId) return ok(await this.svc.findByCountry(countryId));
-    return ok(await this.svc.findAll());
+  @ApiOperation({ summary: 'List all regions with pagination' })
+  async findAll(
+    @Query('countryId') countryId?: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit?: number,
+  ) {
+    const result = countryId
+      ? await this.svc.findByCountry(countryId, page, limit)
+      : await this.svc.findAll(page, limit);
+
+    return ok(result.data, {
+      page,
+      limit,
+      total: result.total,
+      totalPages: Math.ceil(result.total / (limit || 20)),
+    });
+  }
+
+  @Get('slug/:slug')
+  @ApiOperation({ summary: 'Get region by slug' })
+  async findBySlug(@Param('slug') slug: string) {
+    return ok(await this.svc.findBySlug(slug));
   }
 
   @Get(':id')

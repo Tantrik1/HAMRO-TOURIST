@@ -14,16 +14,41 @@ export class ActivitiesService {
     return this.repo.save(this.repo.create(dto));
   }
 
-  async findAll(regionId?: string): Promise<ActivityEntity[]> {
+  async findAll(regionId?: string, page: number = 1, limit: number = 20): Promise<{ data: ActivityEntity[]; total: number }> {
+    // ✅ Bounds checking for pagination
+    page = Math.max(1, page);
+    limit = Math.min(Math.max(1, limit), 100);
+
     const where: any = {};
     if (regionId) where.regionId = regionId;
-    return this.repo.find({ where, order: { createdAt: 'DESC' }, relations: ['region'] });
+
+    const [data, total] = await this.repo.findAndCount({
+      where,
+      order: { createdAt: 'DESC' },
+      relations: ['region'],
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return { data, total };
   }
 
-  async findPublished(regionId?: string): Promise<ActivityEntity[]> {
+  async findPublished(regionId?: string, page: number = 1, limit: number = 20): Promise<{ data: ActivityEntity[]; total: number }> {
+    // ✅ Bounds checking for pagination
+    page = Math.max(1, page);
+    limit = Math.min(Math.max(1, limit), 100);
+
     const where: any = { status: 'published' };
     if (regionId) where.regionId = regionId;
-    return this.repo.find({ where, order: { createdAt: 'DESC' } });
+
+    const [data, total] = await this.repo.findAndCount({
+      where,
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return { data, total };
   }
 
   async findOne(id: string): Promise<ActivityEntity> {

@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThan, MoreThan, Repository } from 'typeorm';
+import { LessThan, MoreThan, IsNull, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Resend } from 'resend';
 import { EmailOtpEntity } from '../entities/email-otp.entity';
@@ -32,7 +32,11 @@ export class OtpService {
     const codeHash = await bcrypt.hash(code, 10);
     const expiresAt = new Date(Date.now() + this.otpTtlMinutes * 60 * 1000);
 
-    await this.otpRepo.update({ email: lower, purpose, consumedAt: undefined as any }, { consumedAt: new Date() });
+    // ✅ FIXED: Use IsNull() instead of 'undefined as any'
+    await this.otpRepo.update(
+      { email: lower, purpose, consumedAt: IsNull() },
+      { consumedAt: new Date() },
+    );
     await this.otpRepo.save({ email: lower, codeHash, purpose, expiresAt });
 
     if (this.resend) {

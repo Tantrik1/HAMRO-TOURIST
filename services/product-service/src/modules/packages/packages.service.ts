@@ -23,12 +23,34 @@ export class PackagesService {
     return this.repo.save(pkg);
   }
 
-  async findAll(): Promise<PackageEntity[]> {
-    return this.repo.find({ order: { createdAt: 'DESC' }, relations: ['regions'] });
+  async findAll(page: number = 1, limit: number = 20): Promise<{ data: PackageEntity[]; total: number }> {
+    // ✅ Bounds checking for pagination
+    page = Math.max(1, page);
+    limit = Math.min(Math.max(1, limit), 100);
+
+    const [data, total] = await this.repo.findAndCount({
+      order: { createdAt: 'DESC' },
+      relations: ['regions'],
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return { data, total };
   }
 
-  async findPublished(): Promise<PackageEntity[]> {
-    return this.repo.find({ where: { status: 'published' }, relations: ['regions'] });
+  async findPublished(page: number = 1, limit: number = 20): Promise<{ data: PackageEntity[]; total: number }> {
+    // ✅ Bounds checking for pagination
+    page = Math.max(1, page);
+    limit = Math.min(Math.max(1, limit), 100);
+
+    const [data, total] = await this.repo.findAndCount({
+      where: { status: 'published' },
+      relations: ['regions'],
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return { data, total };
   }
 
   async findOne(id: string): Promise<PackageEntity> {

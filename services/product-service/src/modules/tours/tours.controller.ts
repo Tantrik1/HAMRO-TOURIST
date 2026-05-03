@@ -1,5 +1,6 @@
 import {
   Controller, Get, Post, Patch, Delete, Param, Body, Query, UseInterceptors,
+  ParseIntPipe, DefaultValuePipe,
 } from '@nestjs/common';
 import { ApiTags, ApiHeader, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ToursService } from './tours.service';
@@ -18,17 +19,31 @@ export class ToursController {
   @Post() @ApiBearerAuth() @ApiOperation({ summary: 'Create tour' })
   async create(@Body() dto: CreateTourDto) { return ok(await this.svc.create(dto)); }
 
-  @Get() @ApiOperation({ summary: 'List tours' })
-  async findAll(@Query('regionId') regionId?: string, @Query('published') published?: string) {
-    if (published === 'true') return ok(await this.svc.findPublished(regionId));
-    return ok(await this.svc.findAll(regionId));
+  @Get() @ApiOperation({ summary: 'List tours with pagination' })
+  async findAll(
+    @Query('regionId') regionId?: string,
+    @Query('published') published?: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit?: number,
+  ) {
+    const result = published === 'true'
+      ? await this.svc.findPublished(regionId, page, limit)
+      : await this.svc.findAll(regionId, page, limit);
+
+    return ok(result.data, {
+      page,
+      limit,
+      total: result.total,
+      totalPages: Math.ceil(result.total / (limit || 20)),
+    });
   }
+
+  // ✅ FIXED: Route ordering - more specific route first
+  @Get('slug/:slug') @ApiOperation({ summary: 'Get tour by slug' })
+  async findBySlug(@Param('slug') slug: string) { return ok(await this.svc.findBySlug(slug)); }
 
   @Get(':id') @ApiOperation({ summary: 'Get tour by ID' })
   async findOne(@Param('id') id: string) { return ok(await this.svc.findOne(id)); }
-
-  @Get('slug/:slug') @ApiOperation({ summary: 'Get tour by slug' })
-  async findBySlug(@Param('slug') slug: string) { return ok(await this.svc.findBySlug(slug)); }
 
   @Patch(':id') @ApiBearerAuth()
   async update(@Param('id') id: string, @Body() dto: UpdateTourDto) { return ok(await this.svc.update(id, dto)); }

@@ -1,8 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand,
 } from '@aws-sdk/client-s3';
+
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB limit
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -10,27 +12,52 @@ import { v4 as uuidv4 } from 'uuid';
 import { QUEUES } from '@hamrotourist/shared-types';
 
 @Injectable()
-export class MediaService {
+export class MediaService implements OnModuleInit {
   private readonly logger = new Logger(MediaService.name);
   private readonly s3: S3Client;
   private readonly bucket: string;
   private readonly cdnBase = 'https://media.hamrotourist.com';
 
+  // Store config values for validation
+  private readonly accountId: string;
+  private readonly r2AccessKey: string;
+  private readonly r2SecretKey: string;
+
   constructor(
     private readonly config: ConfigService,
     @InjectQueue(QUEUES.IMAGE_PROCESSING) private readonly imageQueue: Queue,
   ) {
-    const accountId = this.config.get('CLOUDFLARE_ACCOUNT_ID', '');
-    this.bucket = this.config.get('CLOUDFLARE_R2_BUCKET', 'hamrotourist-media');
+    // ✅ Get values without defaults - will be empty string if not set
+    this.accountId = this.config.get('CLOUDFLARE_ACCOUNT_ID') || '';
+    this.bucket = this.config.get('CLOUDFLARE_R2_BUCKET') || 'hamrotourist-media';
+    this.r2AccessKey = this.config.get('CLOUDFLARE_R2_ACCESS_KEY') || '';
+    this.r2SecretKey = this.config.get('CLOUDFLARE_R2_SECRET_KEY') || '';
 
     this.s3 = new S3Client({
       region: 'auto',
-      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      endpoint: `https://${this.accountId}.r2.cloudflarestorage.com`,
       credentials: {
-        accessKeyId: this.config.get('CLOUDFLARE_R2_ACCESS_KEY', ''),
-        secretAccessKey: this.config.get('CLOUDFLARE_R2_SECRET_KEY', ''),
+        accessKeyId: this.r2AccessKey,
+        secretAccessKey: this.r2SecretKey,
       },
     });
+  }
+
+  onModuleInit() {
+    // ✅ VALIDATE: All required environment variables must be set
+    const required = [
+      ['CLOUDFLARE_ACCOUNT_ID', this.accountId],
+      ['CLOUDFLARE_R2_ACCESS_KEY', this.r2AccessKey],
+      ['CLOUDFLARE_R2_SECRET_KEY', this.r2SecretKey],
+    ];
+
+    for (const [key, value] of required) {
+      if (!value) {
+        throw new Error(`❌ Missing required environment variable: ${key}`);
+      }
+    }
+
+    this.logger.log('✅ All required environment variables configured');
   }
 
   async generatePresignedUploadUrl(
@@ -102,8 +129,22 @@ export class MediaService {
     const resp = await this.s3.send(new GetObjectCommand({
       Bucket: this.bucket, Key: key,
     }));
+
+    // ✅ FIXED: Check content length before streaming
+    const contentLength = resp.ContentLength || 0;
+    if (contentLength > MAX_FILE_SIZE) {
+      throw new BadRequestException(`File exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit`);
+    }
+
     const chunks: Buffer[] = [];
+    let totalSize = 0;
+
     for await (const chunk of resp.Body as any) {
+      totalSize += chunk.length;
+      // ✅ FIXED: Check size during streaming
+      if (totalSize > MAX_FILE_SIZE) {
+        throw new BadRequestException(`File exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit during streaming`);
+      }
       chunks.push(Buffer.from(chunk));
     }
     return Buffer.concat(chunks);

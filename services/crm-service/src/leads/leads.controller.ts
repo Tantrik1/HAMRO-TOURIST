@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseInterceptors, ValidationPipe } from '@nestjs/common';
 import { LeadsService } from './leads.service';
 import { CreateLeadDto, UpdateLeadDto, UpdateLeadStatusDto } from '../dto/lead.dto';
+import { PaginationQueryDto } from '../dto/pagination.query.dto';
 import { TenantContextInterceptor } from '../interceptors/tenant-context.interceptor';
 
 function ok<T>(data: T, meta?: any) {
@@ -18,8 +19,15 @@ export class LeadsController {
   }
 
   @Get()
-  async findAll(@Query('status') status?: string, @Query('contactId') contactId?: string, @Query('page') page?: string, @Query('limit') limit?: string) {
-    const result = await this.service.findAll(status, contactId, Number(page) || 1, Number(limit) || 20);
+  async findAll(
+    @Query('status') status?: string,
+    @Query('contactId') contactId?: string,
+    @Query(new ValidationPipe({ transform: true })) pagination?: PaginationQueryDto,
+  ) {
+    // ✅ VALIDATED: Pagination parameters are validated via DTO
+    const page = pagination?.page || 1;
+    const limit = pagination?.limit || 20;
+    const result = await this.service.findAll(status, contactId, page, limit);
     return ok(result.data, result.meta);
   }
 

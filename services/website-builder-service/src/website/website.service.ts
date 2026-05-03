@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, BadRequestException, OnApplicationShutdown } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -9,7 +9,7 @@ import { WebsiteConfigEntity } from '../entities/website-config.entity';
 import { UpdateWebsiteConfigDto } from './dto/update-website.dto';
 
 @Injectable()
-export class WebsiteService {
+export class WebsiteService implements OnApplicationShutdown {
   private readonly logger = new Logger(WebsiteService.name);
   private readonly redis: Redis;
   private readonly CACHE_TTL = 300; // 5 minutes
@@ -108,6 +108,13 @@ export class WebsiteService {
     this.logger.log(`Published: ${url}`);
 
     return { url, publishedAt: new Date() };
+  }
+
+  // ✅ FIXED: Properly close Redis connection on shutdown
+  async onApplicationShutdown() {
+    this.logger.log('Closing Redis connection...');
+    await this.redis.quit();
+    this.logger.log('Redis connection closed');
   }
 
   private async triggerRevalidation(tenantSlug: string): Promise<void> {

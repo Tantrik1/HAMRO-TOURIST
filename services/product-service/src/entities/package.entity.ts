@@ -1,11 +1,13 @@
 import {
   Entity, PrimaryGeneratedColumn, Column,
   CreateDateColumn, UpdateDateColumn, DeleteDateColumn,
-  ManyToMany, JoinTable,
+  ManyToMany, JoinTable, Index,
 } from 'typeorm';
 import { RegionEntity } from './region.entity';
 
 @Entity('packages')
+@Index(['slug'])  // ✅ Index for slug lookups
+@Index(['status'])  // ✅ Index for status filters
 export class PackageEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -14,6 +16,7 @@ export class PackageEntity {
   title: string;
 
   @Column({ type: 'varchar', length: 255, unique: true })
+  @Index()  // ✅ Index on slug
   slug: string;
 
   @Column({ type: 'text', nullable: true })
@@ -23,6 +26,7 @@ export class PackageEntity {
   coverImageUrl: string | null;
 
   @Column({ type: 'varchar', length: 20, default: 'draft' })
+  @Index()  // ✅ Index on status
   status: string;
 
   @ManyToMany(() => RegionEntity)

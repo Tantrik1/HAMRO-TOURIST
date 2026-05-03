@@ -1,16 +1,20 @@
 import {
   Entity, PrimaryGeneratedColumn, Column,
   CreateDateColumn, UpdateDateColumn, DeleteDateColumn,
-  ManyToOne, JoinColumn,
+  ManyToOne, JoinColumn, Index,
 } from 'typeorm';
 import { RegionEntity } from './region.entity';
 
 @Entity('activities')
+@Index(['slug'])  // ✅ Index for slug lookups
+@Index(['status'])  // ✅ Index for status filters
+@Index(['regionId'])  // ✅ Index for foreign key joins
 export class ActivityEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ name: 'region_id', type: 'uuid' })
+  @Index()  // ✅ Index on region_id
   regionId: string;
 
   @ManyToOne(() => RegionEntity, (r) => r.activities, { onDelete: 'CASCADE' })
@@ -21,6 +25,7 @@ export class ActivityEntity {
   title: string;
 
   @Column({ type: 'varchar', length: 255, unique: true })
+  @Index()  // ✅ Index on slug
   slug: string;
 
   @Column({ type: 'varchar', length: 100 })
@@ -36,6 +41,7 @@ export class ActivityEntity {
   coverImageUrl: string | null;
 
   @Column({ type: 'varchar', length: 20, default: 'draft' })
+  @Index()  // ✅ Index on status
   status: string;
 
   @CreateDateColumn({ name: 'created_at' })

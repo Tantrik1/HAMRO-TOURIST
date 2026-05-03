@@ -7,6 +7,7 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { RegionEntity } from '../../entities/region.entity';
+import { TourEntity } from '../../entities/tour.entity';
 import { CreateRegionDto, UpdateRegionDto } from '../../dto/region.dto';
 
 @Injectable()
@@ -16,6 +17,8 @@ export class RegionsService {
   constructor(
     @InjectRepository(RegionEntity)
     private readonly repo: Repository<RegionEntity>,
+    @InjectRepository(TourEntity)
+    private readonly tourRepo: Repository<TourEntity>,
     private readonly httpService: HttpService,
     private readonly config: ConfigService,
   ) {}
@@ -30,27 +33,66 @@ export class RegionsService {
     return this.repo.save(region);
   }
 
-  async findAll(): Promise<RegionEntity[]> {
-    return this.repo.find({ order: { name: 'ASC' }, relations: ['country'] });
+  async findAll(page: number = 1, limit: number = 20): Promise<{ data: RegionEntity[]; total: number }> {
+    // ✅ Bounds checking for pagination
+    page = Math.max(1, page);
+    limit = Math.min(Math.max(1, limit), 100);
+
+    const [data, total] = await this.repo.findAndCount({
+      order: { name: 'ASC' },
+      relations: ['country'],
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return { data, total };
   }
 
-  async findByCountry(countryId: string): Promise<RegionEntity[]> {
-    return this.repo.find({ where: { countryId }, order: { name: 'ASC' } });
+  async findByCountry(countryId: string, page: number = 1, limit: number = 20): Promise<{ data: RegionEntity[]; total: number }> {
+    // ✅ Bounds checking for pagination
+    page = Math.max(1, page);
+    limit = Math.min(Math.max(1, limit), 100);
+
+    const [data, total] = await this.repo.findAndCount({
+      where: { countryId },
+      order: { name: 'ASC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return { data, total };
   }
 
   async findOne(id: string): Promise<RegionEntity> {
+    // ✅ FIXED: Don't load all relations - only load country
     const region = await this.repo.findOne({
       where: { id },
-      relations: ['country', 'tours', 'treks', 'activities'],
+      relations: ['country'],  // Removed tours, treks, activities
     });
     if (!region) throw new NotFoundException(`Region ${id} not found`);
     return region;
   }
 
+  // ✅ NEW: Separate method to get region with paginated tours
+  async findOneWithTours(id: string, page: number = 1, limit: number = 20): Promise<{ region: RegionEntity; tours: TourEntity[]; total: number }> {
+    const region = await this.findOne(id);
+
+    // ✅ FIXED: Load tours separately with pagination - prevents N+1 query
+    const [tours, total] = await this.tourRepo.findAndCount({
+      where: { regionId: id, status: 'published' },
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { createdAt: 'DESC' },
+    });
+
+    return { region, tours, total };
+  }
+
   async findBySlug(slug: string): Promise<RegionEntity> {
+    // ✅ FIXED: Don't load all relations - only load country
     const region = await this.repo.findOne({
       where: { slug },
-      relations: ['country', 'tours', 'treks', 'activities'],
+      relations: ['country'],  // Removed tours, treks, activities
     });
     if (!region) throw new NotFoundException(`Region "${slug}" not found`);
     return region;
