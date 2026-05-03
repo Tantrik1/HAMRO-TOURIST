@@ -22,7 +22,7 @@ export class PaymentService {
     private config: ConfigService,
   ) {
     this.stripe = new Stripe(this.config.get('STRIPE_SECRET_KEY', 'sk_test_fake'), {
-      apiVersion: '2025-04-30.basil',
+      apiVersion: '2025-02-24.acacia',
     });
     this.esewaSecretKey = this.config.get('ESEWA_SECRET_KEY', '');
     this.esewaMerchantId = this.config.get('ESEWA_MERCHANT_ID', '');
