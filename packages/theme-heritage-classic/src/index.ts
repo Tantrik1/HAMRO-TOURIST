@@ -1,3 +1,4 @@
+import React from 'react';
 import { HeroBanner } from './components/HeroBanner';
 import { FeaturedTours } from './components/FeaturedTours';
 import { RegionShowcase } from './components/RegionShowcase';
@@ -13,7 +14,7 @@ export const THEME_ID = 'heritage-classic' as const;
 export const THEME_NAME = 'Heritage Classic';
 export const THEME_DESCRIPTION = 'Warm tones, traditional travel agency aesthetic with serif fonts';
 
-export const themeComponents = {
+export const themeComponents: Record<string, React.FC<any>> = {
   'hero-banner': HeroBanner,
   'featured-tours': FeaturedTours,
   'region-showcase': RegionShowcase,
