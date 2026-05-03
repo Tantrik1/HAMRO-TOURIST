@@ -4,7 +4,6 @@ networks:
     driver: bridge
 
 volumes:
-  postgres-data:
   redis-data:
 
 x-service-defaults: &service-defaults
@@ -43,7 +42,7 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - /mnt/data/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U hamrotourist"]
       interval: 10s
