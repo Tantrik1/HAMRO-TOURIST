@@ -82,3 +82,47 @@ export enum LeadStatus {
   WON = 'won',
   LOST = 'lost',
 }
+
+export enum SubscriptionStatus {
+  ACTIVE = 'active',
+  PAST_DUE = 'past_due',
+  CANCELED = 'canceled',
+  INCOMPLETE = 'incomplete',
+  TRIALING = 'trialing',
+}
+
+export enum BookingStatus {
+  INQUIRY = 'inquiry',
+  CONFIRMED = 'confirmed',
+  DEPOSIT_PAID = 'deposit_paid',
+  FULLY_PAID = 'fully_paid',
+  COMPLETED = 'completed',
+  CANCELLED = 'cancelled',
+  REFUNDED = 'refunded',
+}
+
+export enum BookingPaymentMethod {
+  STRIPE = 'stripe',
+  ESEWA = 'esewa',
+  KHALTI = 'khalti',
+  BANK_TRANSFER = 'bank_transfer',
+}
+
+export enum BookingPaymentStatus {
+  PENDING = 'pending',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  REFUNDED = 'refunded',
+}
+
+export enum BookingItemType {
+  TOUR = 'tour',
+  TREK = 'trek',
+  ACTIVITY = 'activity',
+  PACKAGE = 'package',
+}
+
+export enum NewsletterStatus {
+  SUBSCRIBED = 'subscribed',
+  UNSUBSCRIBED = 'unsubscribed',
+}

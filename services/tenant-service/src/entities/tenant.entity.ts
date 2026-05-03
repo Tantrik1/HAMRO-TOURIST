@@ -8,7 +8,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { CustomDomainStatus } from '@hamrotourist/shared-types';
+import { CustomDomainStatus, TenantStatus } from '@hamrotourist/shared-types';
 import { PlanEntity } from './plan.entity';
 
 @Entity('tenants')
@@ -46,6 +46,13 @@ export class TenantEntity {
 
   @Column({ name: 'domain_verify_token', type: 'varchar', length: 64, nullable: true })
   domainVerifyToken: string | null;
+
+  @Column({
+    type: 'enum',
+    enum: TenantStatus,
+    default: TenantStatus.ACTIVE,
+  })
+  status: TenantStatus;
 
   @Column({ type: 'boolean', default: false })
   published: boolean;

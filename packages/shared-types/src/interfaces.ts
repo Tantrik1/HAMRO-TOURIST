@@ -11,6 +11,12 @@ import {
   ThemeId,
   WebsiteSectionType,
   LeadStatus,
+  SubscriptionStatus,
+  BookingStatus,
+  BookingPaymentMethod,
+  BookingPaymentStatus,
+  BookingItemType,
+  NewsletterStatus,
 } from './enums';
 
 // ─── Auth ────────────────────────────────────────────────
@@ -284,6 +290,79 @@ export interface CrmLead {
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// ─── Billing ─────────────────────────────────────────────
+
+export interface BillingSubscription {
+  id: string;
+  tenantSlug: string;
+  stripeCustomerId: string;
+  stripeSubscriptionId: string;
+  stripePriceId: string;
+  status: SubscriptionStatus;
+  plan: string;
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+  cancelAtPeriodEnd: boolean;
+  canceledAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ─── Booking ─────────────────────────────────────────────
+
+export interface Booking {
+  id: string;
+  bookingNumber: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  status: BookingStatus;
+  totalAmount: number;
+  paidAmount: number;
+  currency: string;
+  travelDate: Date;
+  numberOfTravelers: number;
+  specialRequests: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface BookingItem {
+  id: string;
+  bookingId: string;
+  itemType: BookingItemType;
+  itemId: string;
+  itemTitle: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface BookingPayment {
+  id: string;
+  bookingId: string;
+  method: BookingPaymentMethod;
+  amount: number;
+  currency: string;
+  status: BookingPaymentStatus;
+  transactionId: string | null;
+  gatewayResponse: Record<string, unknown> | null;
+  paidAt: Date | null;
+  createdAt: Date;
+}
+
+// ─── Newsletter ──────────────────────────────────────────
+
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  name: string | null;
+  status: NewsletterStatus;
+  tenantSlug: string | null;
+  subscribedAt: Date;
+  unsubscribedAt: Date | null;
 }
 
 // ─── Pagination ──────────────────────────────────────────

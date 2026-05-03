@@ -2,8 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TenantModule } from './tenant/tenant.module';
+import { AdminModule } from './admin/admin.module';
 import { TenantEntity } from './entities/tenant.entity';
 import { PlanEntity } from './entities/plan.entity';
+import { SystemSettingEntity } from './entities/system-setting.entity';
+import { AuditLogEntity } from './entities/audit-log.entity';
 
 @Module({
   imports: [
@@ -18,12 +21,13 @@ import { PlanEntity } from './entities/plan.entity';
         username: config.get('DATABASE_USER', 'hamrotourist'),
         password: config.get('DATABASE_PASSWORD', 'hamrotourist_dev'),
         database: config.get('DATABASE_NAME', 'hamrotourist'),
-        entities: [TenantEntity, PlanEntity],
+        entities: [TenantEntity, PlanEntity, SystemSettingEntity, AuditLogEntity],
         synchronize: false,
         schema: 'public',
       }),
     }),
     TenantModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

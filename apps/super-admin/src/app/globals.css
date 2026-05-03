@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ht-violet: #7C3AED;
+  --ht-violet-light: #A78BFA;
+  --ht-violet-dark: #5B21B6;
+  --ht-coral: #F97316;
+  --ht-cyan: #06B6D4;
+  --ht-lime: #84CC16;
+  --ht-rose: #F43F5E;
+  --ht-ink: #0A0A0F;
+  --ht-surface: #111118;
+  --ht-surface-2: #1A1A24;
+  --ht-border: #2A2A3A;
+  --ht-muted: #3D3D52;
+  --ht-text: #F1F0FF;
+  --ht-text-soft: #9B9BB8;
+  --ht-text-faint: #5C5C78;
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 4%;
+    --foreground: 240 60% 97%;
+    --card: 240 12% 8%;
+    --card-foreground: 240 60% 97%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 10% 15%;
+    --secondary-foreground: 240 30% 70%;
+    --muted: 240 10% 20%;
+    --muted-foreground: 240 15% 55%;
+    --accent: 25 95% 53%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 350 89% 60%;
+    --border: 240 13% 20%;
+    --input: 240 13% 20%;
+    --ring: 262 83% 58%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-ht-ink text-ht-text font-body antialiased;
+  }
+  h1, h2, h3 {
+    @apply font-display;
+  }
+}

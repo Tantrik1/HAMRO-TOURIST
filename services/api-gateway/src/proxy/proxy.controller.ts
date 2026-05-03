@@ -50,6 +50,24 @@ export class ProxyController {
     return this.forward('crm', req);
   }
 
+  @All('notifications/*')
+  @ApiOperation({ summary: 'Proxy to Notification Service' })
+  async proxyNotifications(@Req() req: Request) {
+    return this.forward('notifications', req);
+  }
+
+  @All('billing/*')
+  @ApiOperation({ summary: 'Proxy to Billing Service' })
+  async proxyBilling(@Req() req: Request) {
+    return this.forward('billing', req);
+  }
+
+  @All('bookings/*')
+  @ApiOperation({ summary: 'Proxy to Booking Service' })
+  async proxyBookings(@Req() req: Request) {
+    return this.forward('bookings', req);
+  }
+
   private async forward(service: string, req: Request) {
     try {
       return await this.proxyService.forward(service, req);

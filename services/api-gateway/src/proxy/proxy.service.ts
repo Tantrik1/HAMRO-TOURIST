@@ -23,6 +23,8 @@ export class ProxyService {
       domains: `http://localhost:${this.config.get('DOMAIN_SERVICE_PORT', 4006)}`,
       crm: `http://localhost:${this.config.get('CRM_SERVICE_PORT', 4007)}`,
       notifications: `http://localhost:${this.config.get('NOTIFICATION_SERVICE_PORT', 4008)}`,
+      billing: `http://localhost:${this.config.get('BILLING_SERVICE_PORT', 4009)}`,
+      bookings: `http://localhost:${this.config.get('BOOKING_SERVICE_PORT', 4010)}`,
     };
   }
 
