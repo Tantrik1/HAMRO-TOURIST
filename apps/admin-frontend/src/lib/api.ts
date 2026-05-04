@@ -148,3 +148,53 @@ export async function apiPatch<T>(path: string, body: unknown) {
 export async function apiDelete<T>(path: string) {
   return apiFetch<T>(path, { method: 'DELETE' });
 }
+
+export interface PresignedUploadResult {
+  uploadUrl: string;
+  key: string;
+  cdnUrl: string;
+}
+
+export async function uploadImage(
+  file: File,
+  tenantSlug: string,
+  category: string,
+): Promise<string> {
+  const ext = file.name.split('.').pop() || 'bin';
+  const filename = file.name;
+  const contentType = file.type || 'application/octet-stream';
+
+  // 1. Get presigned URL
+  const presignRes = await apiPost<PresignedUploadResult>('/media/presigned-url', {
+    tenantSlug,
+    category,
+    filename,
+    contentType,
+  });
+  if (!presignRes.success) {
+    throw new Error(presignRes.error.message || 'Failed to get upload URL');
+  }
+  const { uploadUrl, key, cdnUrl } = presignRes.data;
+
+  // 2. Upload file to R2 (no auth headers - presigned URL is the auth)
+  const uploadRes = await fetch(uploadUrl, {
+    method: 'PUT',
+    body: file,
+    headers: { 'Content-Type': contentType },
+  });
+  if (!uploadRes.ok) {
+    throw new Error(`Upload failed: ${uploadRes.status} ${uploadRes.statusText}`);
+  }
+
+  // 3. Register upload to queue image processing
+  const registerRes = await apiPost<{ cdnUrl: string }>('/media/register', {
+    tenantSlug,
+    key,
+    contentType,
+  });
+  if (!registerRes.success) {
+    throw new Error(registerRes.error.message || 'Failed to register upload');
+  }
+
+  return registerRes.data.cdnUrl;
+}

@@ -2,10 +2,6 @@
 
 import { ResourcePage } from '@/components/resource-page';
 
-function slugify(s: string) {
-  return s.toLowerCase().trim().replace(/[^a-z0-9-\s]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
-}
-
 export default function CountriesPage() {
   return (
     <ResourcePage
@@ -19,7 +15,7 @@ export default function CountriesPage() {
       ]}
       emptyState="Add your first country to start organizing tours and treks."
       newButtonLabel="Add country"
-      beforeSubmit={(d) => ({ ...d, slug: slugify(d.name || '') })}
+      basePath="/dashboard/countries"
     />
   );
 }

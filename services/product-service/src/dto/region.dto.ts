@@ -38,6 +38,9 @@ export class CreateRegionDto {
 }
 
 export class UpdateRegionDto {
+  @ApiPropertyOptional() @IsOptional() @IsUUID()
+  countryId?: string;
+
   @ApiPropertyOptional() @IsOptional() @IsString() @MinLength(2) @MaxLength(255)
   name?: string;
 

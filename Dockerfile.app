@@ -35,10 +35,7 @@ WORKDIR /app
 COPY --from=builder /monorepo/apps/${APP_NAME}/.next/standalone/ ./
 # Copy static assets - must be next to server.js
 COPY --from=builder /monorepo/apps/${APP_NAME}/.next/static ./apps/${APP_NAME}/.next/static
-# Copy public directory if it exists - must be next to server.js
-RUN mkdir -p ./apps/${APP_NAME}/public && \
-    if [ -d "/monorepo/apps/${APP_NAME}/public" ]; then \
-        cp -r /monorepo/apps/${APP_NAME}/public/* ./apps/${APP_NAME}/public/; \
-    fi
+# Copy public directory - must be next to server.js for static asset serving
+COPY --from=builder /monorepo/apps/${APP_NAME}/public ./apps/${APP_NAME}/public/
 EXPOSE ${APP_PORT}
 CMD ["sh", "-c", "node apps/${APP_NAME}/server.js"]

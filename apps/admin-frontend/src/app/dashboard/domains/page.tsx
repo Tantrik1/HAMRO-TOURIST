@@ -25,9 +25,6 @@ export default function DomainsPage() {
   const user = useAuthStore((s) => s.user);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newDomain, setNewDomain] = useState('');
-  const [adding, setAdding] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -38,21 +35,6 @@ export default function DomainsPage() {
     }
     load();
   }, [user?.tenantSlug]);
-
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault();
-    if (!user?.tenantSlug || !newDomain) return;
-    setAdding(true);
-    setError('');
-    const res = await apiPost<Domain>('/domains', { tenantSlug: user.tenantSlug, domain: newDomain });
-    if (res.success) {
-      setDomains((prev) => [res.data, ...prev]);
-      setNewDomain('');
-    } else {
-      setError('error' in res ? res.error.message : 'Failed');
-    }
-    setAdding(false);
-  }
 
   async function handleDelete(id: string) {
     if (!confirm('Remove this domain?')) return;
@@ -84,21 +66,14 @@ export default function DomainsPage() {
         </p>
       </div>
 
-      {/* Add domain form */}
-      <form onSubmit={handleAdd} className="flex gap-3 mb-6">
-        <input
-          type="text"
-          value={newDomain}
-          onChange={(e) => setNewDomain(e.target.value)}
-          placeholder="travel.yourdomain.com"
-          className="flex-1 px-4 py-3 rounded-xl bg-ht-surface border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet min-h-[44px]"
-        />
-        <button type="submit" disabled={adding || !newDomain}
-          className="px-6 py-3 rounded-full font-body font-semibold text-sm text-white bg-grad-primary hover:shadow-glow-violet transition-all min-h-[44px] disabled:opacity-50 whitespace-nowrap">
-          {adding ? 'Adding...' : 'Add Domain'}
-        </button>
-      </form>
-      {error && <p className="text-ht-rose text-sm font-body mb-4">{error}</p>}
+      {/* Add domain button */}
+      <a
+        href="/dashboard/domains/new"
+        className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-body font-semibold text-sm text-white bg-grad-primary hover:shadow-glow-violet transition-all duration-200 min-h-[44px] mb-6"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+        Add Domain
+      </a>
 
       {/* Domain list */}
       {loading ? (

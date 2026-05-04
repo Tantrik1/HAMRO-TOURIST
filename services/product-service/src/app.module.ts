@@ -13,6 +13,7 @@ import {
   CountryEntity, RegionEntity, TourEntity, TrekEntity,
   ActivityEntity, PackageEntity, TourActivityEntity, TrekActivityEntity,
   ItineraryEntity, ItineraryDayEntity, ItineraryPricingEntity, GroupDiscountEntity,
+  FaqEntity, PackageDestinationEntity,
 } from './entities';
 
 @Module({
@@ -32,6 +33,7 @@ import {
           CountryEntity, RegionEntity, TourEntity, TrekEntity,
           ActivityEntity, PackageEntity, TourActivityEntity, TrekActivityEntity,
           ItineraryEntity, ItineraryDayEntity, ItineraryPricingEntity, GroupDiscountEntity,
+          FaqEntity, PackageDestinationEntity,
         ],
         synchronize: false,
         namingStrategy: new SnakeNamingStrategy(),

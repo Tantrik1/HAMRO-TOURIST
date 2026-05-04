@@ -67,6 +67,9 @@ export class CreateTrekDto {
 }
 
 export class UpdateTrekDto {
+  @ApiPropertyOptional() @IsOptional() @IsUUID()
+  regionId?: string;
+
   @ApiPropertyOptional() @IsOptional() @IsString() @MinLength(3) @MaxLength(255)
   title?: string;
 

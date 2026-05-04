@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
-  S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand,
+  S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, PutBucketCorsCommand,
 } from '@aws-sdk/client-s3';
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB limit
@@ -43,7 +43,7 @@ export class MediaService implements OnModuleInit {
     });
   }
 
-  onModuleInit() {
+  async onModuleInit() {
     // ✅ VALIDATE: All required environment variables must be set
     const required = [
       ['CLOUDFLARE_ACCOUNT_ID', this.accountId],
@@ -58,6 +58,35 @@ export class MediaService implements OnModuleInit {
     }
 
     this.logger.log('✅ All required environment variables configured');
+
+    // Configure CORS on the R2 bucket so browsers can PUT directly to presigned URLs
+    try {
+      await this.s3.send(new PutBucketCorsCommand({
+        Bucket: this.bucket,
+        CORSConfiguration: {
+          CORSRules: [
+            {
+              AllowedOrigins: [
+                'https://hamrotourist.com',
+                'https://www.hamrotourist.com',
+                'https://app.hamrotourist.com',
+                'https://media.hamrotourist.com',
+                'http://localhost:3000',
+                'http://localhost:3001',
+                'http://localhost:3002',
+              ],
+              AllowedMethods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE'],
+              AllowedHeaders: ['*'],
+              ExposeHeaders: ['Content-Length', 'Content-Type', 'ETag'],
+              MaxAgeSeconds: 86400,
+            },
+          ],
+        },
+      }));
+      this.logger.log('✅ R2 bucket CORS configured');
+    } catch (err: any) {
+      this.logger.warn(`⚠️ Could not configure R2 CORS: ${err.message}`);
+    }
   }
 
   async generatePresignedUploadUrl(

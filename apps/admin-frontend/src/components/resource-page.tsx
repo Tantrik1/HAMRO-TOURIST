@@ -23,6 +23,7 @@ interface ResourcePageProps {
   emptyState: string;
   newButtonLabel?: string;
   beforeSubmit?: (data: Record<string, any>) => Record<string, any>;
+  basePath: string;
 }
 
 export function ResourcePage({
@@ -35,14 +36,10 @@ export function ResourcePage({
   emptyState,
   newButtonLabel = 'Add New',
   beforeSubmit,
+  basePath,
 }: ResourcePageProps) {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState<Record<string, any>>({});
-  const [error, setError] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
 
   async function reload() {
     setLoading(true);
@@ -52,39 +49,6 @@ export function ResourcePage({
   }
 
   useEffect(() => { reload(); }, [endpoint]);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
-    setSubmitting(true);
-    const payload = beforeSubmit ? beforeSubmit(form) : form;
-    const res = editingId
-      ? await apiPatch(`${endpoint}/${editingId}`, payload)
-      : await apiPost(endpoint, payload);
-    setSubmitting(false);
-    if (res.success) {
-      setShowForm(false);
-      setForm({});
-      setEditingId(null);
-      reload();
-    } else {
-      setError(res.error.message);
-    }
-  }
-
-  function handleEdit(item: any) {
-    setForm(item);
-    setEditingId(item.id);
-    setShowForm(true);
-    setError('');
-  }
-
-  function handleCancelEdit() {
-    setShowForm(false);
-    setForm({});
-    setEditingId(null);
-    setError('');
-  }
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this item? This cannot be undone.')) return;
@@ -99,86 +63,14 @@ export function ResourcePage({
           <h1 className="font-display font-bold text-3xl text-ht-text">{title}</h1>
           <p className="font-body text-ht-soft mt-1">{subtitle}</p>
         </div>
-        <button
-          onClick={() => {
-            if (showForm && editingId) {
-              handleCancelEdit();
-            } else {
-              setShowForm((v) => !v);
-            }
-          }}
+        <a
+          href={`${basePath}/new`}
           className="inline-flex items-center gap-2 bg-grad-primary text-white font-semibold rounded-full px-5 py-2.5 hover:shadow-glow-violet hover:scale-[1.02] transition-all"
         >
           <Plus className="w-4 h-4" />
-          {showForm ? (editingId ? 'Cancel Edit' : 'Cancel') : newButtonLabel}
-        </button>
+          {newButtonLabel}
+        </a>
       </div>
-
-      {showForm && (
-        <form
-          onSubmit={handleSubmit}
-          className="bg-ht-surface border border-ht-border rounded-xl2 p-6 mb-6 animate-slide-up"
-        >
-          {error && (
-            <div className="mb-4 p-3 rounded-md bg-ht-rose/10 border border-ht-rose/30 text-ht-rose text-sm">
-              {error}
-            </div>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {fields.map((f) => (
-              <div key={f.name} className={f.type === 'textarea' ? 'sm:col-span-2' : ''}>
-                <label className="block">
-                  <span className="text-xs font-body text-ht-soft uppercase tracking-wider">
-                    {f.label}{f.required && <span className="text-ht-rose ml-1">*</span>}
-                  </span>
-                  {f.type === 'textarea' ? (
-                    <textarea
-                      value={form[f.name] || ''}
-                      onChange={(e) => setForm({ ...form, [f.name]: e.target.value })}
-                      placeholder={f.placeholder}
-                      required={f.required}
-                      rows={3}
-                      className="mt-1 w-full px-3 py-2 bg-ht-ink border border-ht-border rounded-md text-ht-text focus:border-ht-violet focus:outline-none"
-                    />
-                  ) : f.type === 'select' ? (
-                    <select
-                      value={form[f.name] || ''}
-                      onChange={(e) => setForm({ ...form, [f.name]: e.target.value })}
-                      required={f.required}
-                      className="mt-1 w-full px-3 py-2 bg-ht-ink border border-ht-border rounded-md text-ht-text focus:border-ht-violet focus:outline-none"
-                    >
-                      <option value="">Select…</option>
-                      {f.options?.map((o) => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type={f.type || 'text'}
-                      value={form[f.name] || ''}
-                      onChange={(e) => setForm({
-                        ...form,
-                        [f.name]: f.type === 'number' ? Number(e.target.value) : e.target.value,
-                      })}
-                      placeholder={f.placeholder}
-                      required={f.required}
-                      className="mt-1 w-full px-3 py-2 bg-ht-ink border border-ht-border rounded-md text-ht-text focus:border-ht-violet focus:outline-none"
-                    />
-                  )}
-                </label>
-              </div>
-            ))}
-          </div>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="mt-5 inline-flex items-center gap-2 bg-grad-primary text-white font-semibold rounded-full px-6 py-2.5 hover:shadow-glow-violet disabled:opacity-50"
-          >
-            {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            {editingId ? 'Update' : 'Save'}
-          </button>
-        </form>
-      )}
 
       {loading ? (
         <div className="flex justify-center py-20">
@@ -209,13 +101,13 @@ export function ResourcePage({
                   )}
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-                  <button
-                    onClick={() => handleEdit(item)}
+                  <a
+                    href={`${basePath}/${item.id}/edit`}
                     className="p-2 rounded-md text-ht-soft hover:text-ht-violet hover:bg-ht-violet/10 transition"
                     title="Edit"
                   >
                     <Edit2 className="w-4 h-4" />
-                  </button>
+                  </a>
                   <button
                     onClick={() => handleDelete(item.id)}
                     className="p-2 rounded-md text-ht-soft hover:text-ht-rose hover:bg-ht-rose/10 transition"

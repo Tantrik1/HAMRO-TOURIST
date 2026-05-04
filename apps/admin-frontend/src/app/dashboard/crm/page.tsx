@@ -38,8 +38,6 @@ export default function CRMPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showNewContact, setShowNewContact] = useState(false);
-  const [newContact, setNewContact] = useState({ name: '', email: '', phone: '', source: 'manual' });
 
   useEffect(() => {
     async function load() {
@@ -56,16 +54,6 @@ export default function CRMPage() {
     load();
   }, [tab]);
 
-  async function createContact(e: React.FormEvent) {
-    e.preventDefault();
-    const res = await apiPost<Contact>('/crm/contacts', newContact);
-    if (res.success) {
-      setContacts((prev) => [res.data, ...prev]);
-      setShowNewContact(false);
-      setNewContact({ name: '', email: '', phone: '', source: 'manual' });
-    }
-  }
-
   async function updateLeadStatus(leadId: string, status: string) {
     const res = await apiPatch<Lead>(`/crm/leads/${leadId}/status`, { status });
     if (res.success) {
@@ -81,11 +69,13 @@ export default function CRMPage() {
           <p className="font-body text-ht-soft mt-1">Manage contacts and track your sales pipeline.</p>
         </div>
         {tab === 'contacts' && (
-          <button onClick={() => setShowNewContact(true)}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-body font-semibold text-sm text-white bg-grad-primary hover:shadow-glow-violet transition-all duration-200 min-h-[44px]">
+          <a
+            href="/dashboard/crm/contacts/new"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-body font-semibold text-sm text-white bg-grad-primary hover:shadow-glow-violet transition-all duration-200 min-h-[44px]"
+          >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
             Add Contact
-          </button>
+          </a>
         )}
       </div>
 
@@ -100,24 +90,6 @@ export default function CRMPage() {
           </button>
         ))}
       </div>
-
-      {/* New Contact Form */}
-      {showNewContact && (
-        <form onSubmit={createContact} className="bg-ht-surface border border-ht-border rounded-xl2 p-6 mb-6 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <input type="text" placeholder="Name" required value={newContact.name} onChange={(e) => setNewContact(p => ({ ...p, name: e.target.value }))}
-              className="px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet min-h-[44px]" />
-            <input type="email" placeholder="Email" required value={newContact.email} onChange={(e) => setNewContact(p => ({ ...p, email: e.target.value }))}
-              className="px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet min-h-[44px]" />
-            <input type="text" placeholder="Phone" value={newContact.phone} onChange={(e) => setNewContact(p => ({ ...p, phone: e.target.value }))}
-              className="px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet min-h-[44px]" />
-          </div>
-          <div className="flex gap-2">
-            <button type="submit" className="px-6 py-2 rounded-full font-body font-semibold text-sm text-white bg-grad-primary min-h-[40px]">Save</button>
-            <button type="button" onClick={() => setShowNewContact(false)} className="px-6 py-2 rounded-full font-body text-sm text-ht-soft border border-ht-border min-h-[40px]">Cancel</button>
-          </div>
-        </form>
-      )}
 
       {loading ? (
         <div className="space-y-3">

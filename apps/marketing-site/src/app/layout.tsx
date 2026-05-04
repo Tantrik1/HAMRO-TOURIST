@@ -1,13 +1,13 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Hamro Tourist — Get Your Travel Agency Online in 10 Minutes',
-  description: 'The all-in-one SaaS for Nepal travel agencies. Beautiful website, product builder, CRM, and custom domain — set up in under 10 minutes. Free for first 1,000 agencies.',
+  title: 'Hamro Tourist — Travel agency website in 10 minutes',
+  description: 'Launch your travel agency online in 10 minutes. AI website builder, custom domain, CRM, payments and email automation — all in one.',
   keywords: ['travel agency website', 'Nepal tourism', 'trekking website', 'tour operator software', 'travel CRM', 'Nepal travel SaaS'],
   openGraph: {
-    title: 'Hamro Tourist — Get Your Travel Agency Online in 10 Minutes',
-    description: 'The all-in-one SaaS for Nepal travel agencies. Beautiful website, product builder, CRM, and custom domain.',
+    title: 'Hamro Tourist — Travel agency website in 10 minutes',
+    description: 'Launch your travel agency online in 10 minutes. AI website builder, custom domain, CRM, payments and email automation — all in one.',
     url: 'https://hamrotourist.com',
     siteName: 'Hamro Tourist',
     locale: 'en_NP',
@@ -15,8 +15,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Hamro Tourist — Get Your Travel Agency Online in 10 Minutes',
-    description: 'The all-in-one SaaS for Nepal travel agencies.',
+    title: 'Hamro Tourist — Travel agency website in 10 minutes',
+    description: 'Launch your travel agency online in 10 minutes.',
   },
   robots: {
     index: true,
@@ -29,17 +29,18 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-ht-ink text-ht-text font-body antialiased">{children}</body>
+    <html lang="en">
+      <body className="bg-background text-foreground font-sans antialiased">{children}</body>
     </html>
   );
 }
