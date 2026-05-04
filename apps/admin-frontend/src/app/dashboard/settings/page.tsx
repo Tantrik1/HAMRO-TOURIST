@@ -26,16 +26,16 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="font-display font-bold text-3xl text-ht-text">Settings</h1>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="font-display font-bold text-2xl sm:text-3xl text-ht-text">Settings</h1>
         <p className="font-body text-ht-soft mt-1">Manage your account and preferences.</p>
       </div>
 
       {/* Profile */}
       <div className="max-w-xl">
-        <h2 className="font-display font-bold text-xl text-ht-text mb-4">Profile</h2>
-        <form onSubmit={handleSave} className="bg-ht-surface border border-ht-border rounded-xl2 p-6 space-y-5">
-          <div className="grid grid-cols-2 gap-4">
+        <h2 className="font-display font-bold text-lg sm:text-xl text-ht-text mb-4">Profile</h2>
+        <form onSubmit={handleSave} className="bg-ht-surface border border-ht-border rounded-xl2 p-4 sm:p-6 space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block font-body text-sm text-ht-soft mb-1.5">First Name</label>
               <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)}
@@ -71,20 +71,20 @@ export default function SettingsPage() {
       </div>
 
       {/* Billing section */}
-      <div className="max-w-xl mt-10">
-        <h2 className="font-display font-bold text-xl text-ht-text mb-4">Billing & Plan</h2>
-        <div className="bg-ht-surface border border-ht-border rounded-xl2 p-6">
-          <div className="flex items-center justify-between mb-4">
+      <div className="max-w-xl mt-8 sm:mt-10">
+        <h2 className="font-display font-bold text-lg sm:text-xl text-ht-text mb-4">Billing & Plan</h2>
+        <div className="bg-ht-surface border border-ht-border rounded-xl2 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 mb-4">
             <div>
               <p className="font-body text-sm text-ht-soft">Current Plan</p>
               <p className="font-display font-bold text-2xl text-ht-text">Free</p>
             </div>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-[#84CC16]/15 text-[#84CC16] border border-[#84CC16]/30">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-[#84CC16]/15 text-[#84CC16] border border-[#84CC16]/30 w-fit">
               <span className="w-1.5 h-1.5 rounded-full bg-current" /> Active
             </span>
           </div>
           <a href="/dashboard/billing"
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-body font-semibold text-sm text-white bg-grad-warm hover:shadow-glow-coral transition-all min-h-[44px]">
+            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full font-body font-semibold text-sm text-white bg-grad-warm hover:shadow-glow-coral transition-all min-h-[44px]">
             Upgrade Plan
           </a>
         </div>

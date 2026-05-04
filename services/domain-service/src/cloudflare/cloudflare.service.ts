@@ -17,8 +17,8 @@ export class CloudflareService {
   private readonly zoneId: string;
 
   constructor(private config: ConfigService) {
-    this.token = this.config.get('CF_API_TOKEN', '');
-    this.zoneId = this.config.get('CF_ZONE_ID', '');
+    this.token = this.config.get('CLOUDFLARE_API_TOKEN', '');
+    this.zoneId = this.config.get('CLOUDFLARE_ZONE_ID', '');
   }
 
   private get headers() {

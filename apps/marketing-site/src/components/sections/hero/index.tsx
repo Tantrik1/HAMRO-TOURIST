@@ -1,275 +1,523 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight, Play, Sparkles, Check } from 'lucide-react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useRef, useEffect } from 'react';
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useSpring,
+  useReducedMotion,
+  type MotionValue,
+} from 'framer-motion';
+import { ArrowRight, Play } from 'lucide-react';
 
-gsap.registerPlugin(ScrollTrigger);
+const LOGOS = [
+  { name: 'TravelTech', width: 100 },
+  { name: 'Wanderlust', width: 110 },
+  { name: 'RouteIQ', width: 90 },
+  { name: 'VoyagerOS', width: 105 },
+  { name: 'TripForge', width: 95 },
+  { name: 'FlightCore', width: 112 },
+];
 
 export default function ScrollHero() {
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const stickyRef = useRef<HTMLDivElement>(null);
-  const videoWrapRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const state1Ref = useRef<HTMLDivElement>(null);
-  const state2Ref = useRef<HTMLDivElement>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ['start start', 'end end'],
+  });
+
+  /* Smoothed scroll progress — used for the subtle background video zoom. */
+  const smooth = useSpring(scrollYProgress, { stiffness: 80, damping: 25 });
+
+  /* ── TEXT (visible on top of the video from frame 0, fades on scroll) ── */
+  const textColOpacity = useTransform(scrollYProgress, [0.0, 0.22], [1, 0]);
+  const textColY = useTransform(scrollYProgress, [0.0, 0.22], [0, -40]);
+  const h1Y = useTransform(scrollYProgress, [0.0, 0.15], [0, -48]);
+  const subY = useTransform(scrollYProgress, [0.05, 0.18], [0, -36]);
+  const ctaY = useTransform(scrollYProgress, [0.08, 0.2], [0, -28]);
+
+  /* ── VIDEO BACKGROUND — subtle zoom only, no card expansion ── */
+  const videoScale = useTransform(smooth, [0.0, 0.3], [1.0, 1.08]);
+
+  /* ── VIDEO EXIT — slides up to reveal logos ── */
+  const videoExitY = useTransform(scrollYProgress, [0.55, 0.78], ['0%', '-100%']);
+  const videoExitOp = useTransform(scrollYProgress, [0.65, 0.8], [1, 0]);
+
+  /* ── OVERLAY TAGLINE (fades in then out over the full-screen video) ── */
+  const overlayOp = useTransform(
+    scrollYProgress,
+    [0.28, 0.4, 0.5, 0.6],
+    [0, 1, 1, 0]
+  );
+  const overlayY = useTransform(scrollYProgress, [0.28, 0.4], [24, 0]);
+
+  /* ── SCRIM strengthens as text appears and again for tagline ── */
+  const scrimOp = useTransform(
+    scrollYProgress,
+    [0.0, 0.25, 0.4, 0.6, 0.78],
+    [0.55, 0.3, 0.55, 0.55, 0]
+  );
+
+  /* ── LOGOS SECTION ── */
+  const logosY = useTransform(scrollYProgress, [0.7, 0.9], [80, 0]);
+  const logosOp = useTransform(scrollYProgress, [0.7, 0.88], [0, 1]);
+  const logoTitleOp = useTransform(scrollYProgress, [0.82, 0.94], [0, 1]);
+  const logoTitleY = useTransform(scrollYProgress, [0.82, 0.94], [20, 0]);
+
+  /* ── SCROLL HINT — only visible at the very top ── */
+  const hintOp = useTransform(scrollYProgress, [0.0, 0.06], [1, 0]);
+
+  /* Ensure autoplay on mount (works on iOS/Android/FB in-app when muted). */
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = true;
+    v.playsInline = true;
+    const tryPlay = () => v.play().catch(() => {});
+    tryPlay();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') tryPlay();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);
-
-  useEffect(() => {
-    const section = sectionRef.current;
-    const sticky = stickyRef.current;
-    const videoWrap = videoWrapRef.current;
-    const video = videoRef.current;
-    const state1 = state1Ref.current;
-    const state2 = state2Ref.current;
-    if (!section || !sticky || !videoWrap || !video || !state1 || !state2) return;
-
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: section,
-          start: 'top top',
-          end: 'bottom bottom',
-          scrub: 0.8,
-          pin: false,
-        },
-      });
-
-      // STATE 1 → fade out
-      tl.to(
-        state1,
-        { opacity: 0, y: -40, duration: 0.35, ease: 'power2.inOut' },
-        0
-      );
-
-      // Video: right → center/left + scale up
-      tl.fromTo(
-        videoWrap,
-        { x: '15%', scale: 0.92 },
-        { x: '-8%', scale: 1.08, duration: 1, ease: 'none' },
-        0
-      );
-
-      // STATE 2 → fade in
-      tl.fromTo(
-        state2,
-        { opacity: 0, y: 50 },
-        { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' },
-        0.35
-      );
-
-      // Mobile video scrub
-      if (isMobile) {
-        video.pause();
-        video.currentTime = 0;
-        ScrollTrigger.create({
-          trigger: section,
-          start: 'top top',
-          end: 'bottom bottom',
-          onUpdate: (self) => {
-            if (video.duration && !isNaN(video.duration)) {
-              video.currentTime = self.progress * video.duration;
-            }
-          },
-        });
-      } else {
-        video.play().catch(() => {});
-      }
-    }, section);
-
-    return () => ctx.revert();
-  }, [isMobile]);
 
   return (
     <section
-      ref={sectionRef}
-      className="relative w-full"
-      style={{ height: '220vh' }}
+      ref={containerRef}
+      aria-label="Hero"
+      className="hero-scroll-root"
+      style={{ position: 'relative' }}
     >
-      <div
-        ref={stickyRef}
-        className="sticky top-0 h-screen w-full overflow-hidden bg-gradient-soft flex items-center"
-      >
-        {/* Soft background blobs */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-40 -right-40 h-[40rem] w-[40rem] rounded-full bg-gradient-accent opacity-[0.05] blur-3xl" />
-          <div className="absolute -bottom-40 -left-40 h-[40rem] w-[40rem] rounded-full bg-gradient-primary opacity-[0.05] blur-3xl" />
-        </div>
+      {/*
+        ───────────────────────────────────────────────────────────────
+        Inline responsive CSS. Using 100dvh with 100vh fallback fixes
+        Chrome / Safari / Firefox + Facebook Messenger / Instagram
+        in-app browsers where 100vh jumps when the URL bar collapses.
+        svh is used for the sticky viewport so it never overflows.
+        ───────────────────────────────────────────────────────────────
+      */}
+      <style jsx>{`
+        .hero-scroll-root {
+          height: 500vh;
+          height: 500svh;
+        }
+        .hero-sticky {
+          position: sticky;
+          top: 0;
+          height: 100vh;
+          height: 100svh;
+          height: 100dvh;
+          overflow: hidden;
+          background: #0a1024;
+        }
+        .hero-text-wrap {
+          position: absolute;
+          inset: 0;
+          z-index: 30;
+          display: flex;
+          align-items: center;
+          padding-left: clamp(1.25rem, 6vw, 6rem);
+          padding-right: clamp(1.25rem, 6vw, 6rem);
+          padding-top: 5rem;
+          padding-bottom: 5rem;
+          pointer-events: none;
+        }
+        .hero-text-inner {
+          pointer-events: auto;
+          max-width: 640px;
+          width: min(100%, 640px);
+        }
+        .hero-title {
+          font-size: clamp(2rem, 5.5vw, 4.75rem);
+          font-weight: 800;
+          color: #ffffff;
+          line-height: 1.05;
+          letter-spacing: -0.02em;
+          text-shadow: 0 2px 30px rgba(0, 0, 0, 0.45);
+        }
+        .hero-accent {
+          color: #ff8a3d;
+          background: linear-gradient(92deg, #ffb272 0%, #ff7a1a 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .hero-sub {
+          margin-top: clamp(0.9rem, 1.6vw, 1.35rem);
+          font-size: clamp(0.95rem, 1.35vw, 1.2rem);
+          color: rgba(255, 255, 255, 0.85);
+          line-height: 1.65;
+          max-width: 52ch;
+          text-shadow: 0 1px 16px rgba(0, 0, 0, 0.5);
+        }
+        .hero-ctas {
+          display: flex;
+          gap: 0.75rem;
+          margin-top: clamp(1.25rem, 2.6vw, 2.1rem);
+          flex-wrap: wrap;
+        }
+        .btn-primary {
+          background: #ffffff;
+          color: #0f1f3d;
+          padding: 0.85rem 1.6rem;
+          border-radius: 9999px;
+          font-size: clamp(0.9rem, 1.05vw, 1rem);
+          font-weight: 600;
+          text-decoration: none;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          box-shadow: 0 14px 36px -14px rgba(0, 0, 0, 0.55);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .btn-primary:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 18px 40px -14px rgba(0, 0, 0, 0.6);
+        }
+        .btn-ghost {
+          background: rgba(255, 255, 255, 0.08);
+          color: #ffffff;
+          border: 1.5px solid rgba(255, 255, 255, 0.55);
+          padding: 0.85rem 1.4rem;
+          border-radius: 9999px;
+          font-size: clamp(0.9rem, 1.05vw, 1rem);
+          font-weight: 600;
+          text-decoration: none;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          transition: background 0.2s ease, border-color 0.2s ease;
+        }
+        .btn-ghost:hover {
+          background: rgba(255, 255, 255, 0.16);
+          border-color: rgba(255, 255, 255, 0.8);
+        }
+        .trust-row {
+          margin-top: clamp(1rem, 2vw, 1.5rem);
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem 1rem;
+          font-size: clamp(0.75rem, 0.9vw, 0.85rem);
+          color: rgba(255, 255, 255, 0.72);
+        }
+        .tagline {
+          color: #ffffff;
+          font-size: clamp(1.5rem, 4vw, 3.25rem);
+          font-weight: 700;
+          text-align: center;
+          line-height: 1.15;
+          letter-spacing: -0.01em;
+          text-shadow: 0 2px 32px rgba(0, 0, 0, 0.6);
+          max-width: min(90vw, 820px);
+          padding: 0 1.25rem;
+        }
+        .logos-shell {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          z-index: 5;
+          background: #f7f4ef;
+          padding: clamp(2rem, 5vw, 4rem) clamp(1.25rem, 6vw, 6rem);
+        }
+        .logos-kicker {
+          text-align: center;
+          font-size: clamp(0.7rem, 0.85vw, 0.85rem);
+          font-weight: 600;
+          letter-spacing: 0.14em;
+          color: #9ca3af;
+          text-transform: uppercase;
+          margin-bottom: clamp(1rem, 2.4vw, 2rem);
+        }
+        .logos-grid {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: clamp(1rem, 4vw, 3.5rem);
+          flex-wrap: wrap;
+        }
+        .scroll-hint {
+          position: absolute;
+          left: 50%;
+          bottom: clamp(1rem, 3vw, 2.25rem);
+          transform: translateX(-50%);
+          z-index: 40;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.5rem;
+          color: rgba(255, 255, 255, 0.75);
+          font-size: 0.7rem;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          pointer-events: none;
+        }
+        .scroll-hint-dot {
+          width: 22px;
+          height: 38px;
+          border: 1.5px solid rgba(255, 255, 255, 0.55);
+          border-radius: 9999px;
+          display: flex;
+          justify-content: center;
+          padding-top: 6px;
+        }
+        .scroll-hint-dot::before {
+          content: '';
+          width: 3px;
+          height: 7px;
+          border-radius: 9999px;
+          background: rgba(255, 255, 255, 0.85);
+          animation: dot 1.6s ease-in-out infinite;
+        }
+        @keyframes dot {
+          0%,
+          100% {
+            transform: translateY(0);
+            opacity: 0;
+          }
+          40% {
+            opacity: 1;
+          }
+          70% {
+            transform: translateY(12px);
+            opacity: 0;
+          }
+        }
+        /* Tablet & below */
+        @media (max-width: 900px) {
+          .hero-text-wrap {
+            align-items: flex-end;
+            padding-bottom: clamp(7rem, 16vw, 10rem);
+            text-align: left;
+          }
+        }
+        /* Narrow phones */
+        @media (max-width: 540px) {
+          .hero-ctas {
+            width: 100%;
+          }
+          .btn-primary,
+          .btn-ghost {
+            flex: 1 1 auto;
+            justify-content: center;
+          }
+        }
+        /* Tiny screens (FB Messenger in-app on small Androids) */
+        @media (max-width: 380px) {
+          .trust-row {
+            gap: 0.35rem 0.65rem;
+          }
+        }
+        /* Very tall / TV / ultrawide */
+        @media (min-width: 1800px) {
+          .hero-title {
+            font-size: clamp(3.5rem, 5vw, 6rem);
+          }
+          .hero-sub {
+            font-size: clamp(1.1rem, 1.2vw, 1.4rem);
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .scroll-hint-dot::before {
+            animation: none;
+          }
+        }
+      `}</style>
 
-        {/* Content container */}
-        <div className="relative z-10 max-w-7xl mx-auto px-5 lg:px-8 w-full h-full flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-0">
-          {/* LEFT: Text states */}
-          <div className="relative w-full lg:w-1/2 flex items-center min-h-[200px] lg:min-h-0">
-            {/* STATE 1 */}
-            <div
-              ref={state1Ref}
-              className="w-full absolute inset-0 flex flex-col justify-center will-change-transform"
-            >
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <div className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3.5 py-1.5 text-xs font-semibold text-accent w-fit">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  10% OFF for first 25 sign-ups · only 8 spots left
-                </div>
-
-                <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] text-foreground">
-                  Manage Your Travel Agency{' '}
-                  <span className="text-gradient-accent">Effortlessly.</span>
-                </h1>
-
-                <p className="mt-5 text-lg text-muted-foreground max-w-xl">
-                  Everything you need to run your agency — bookings, payments, vendors,
-                  CRM — in one beautifully simple platform. No code required.
-                </p>
-
-                <div className="mt-8 flex flex-wrap items-center gap-4">
-                  <a
-                    href="#cta"
-                    className="group inline-flex items-center gap-2 rounded-full bg-gradient-primary text-primary-foreground px-7 py-3.5 font-semibold shadow-elegant hover:shadow-glow transition-all"
-                  >
-                    Sign up now — it&apos;s free
-                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition" />
-                  </a>
-                  <a
-                    href="#resources"
-                    className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-3.5 font-semibold text-foreground hover:border-primary transition"
-                  >
-                    <Play className="h-4 w-4 text-accent" /> View Demo
-                  </a>
-                </div>
-
-                <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                  <span className="inline-flex items-center gap-1.5">
-                    <Check className="h-4 w-4 text-accent" /> No credit card
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Check className="h-4 w-4 text-accent" /> Setup in 10 minutes
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Check className="h-4 w-4 text-accent" /> Cancel anytime
-                  </span>
-                </div>
-              </motion.div>
-            </div>
-
-            {/* STATE 2 */}
-            <div
-              ref={state2Ref}
-              className="w-full absolute inset-0 flex flex-col justify-center opacity-0 will-change-transform"
-            >
-              <div className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3.5 py-1.5 text-xs font-semibold text-accent w-fit">
-                <Sparkles className="h-3.5 w-3.5" />
-                Trusted by 47 agencies across Nepal
-              </div>
-
-              <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] text-foreground">
-                Get Tourists From{' '}
-                <span className="text-gradient-accent">All Around the World.</span>
-              </h1>
-
-              <p className="mt-5 text-lg text-muted-foreground max-w-xl">
-                Deliver seamless global travel experiences with ease. Your website works
-                24/7, speaks every language, and takes bookings while you sleep.
-              </p>
-
-              <div className="mt-8 flex flex-wrap items-center gap-4">
-                <a
-                  href="#cta"
-                  className="group inline-flex items-center gap-2 rounded-full bg-gradient-primary text-primary-foreground px-7 py-3.5 font-semibold shadow-elegant hover:shadow-glow transition-all"
-                >
-                  Launch your site
-                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition" />
-                </a>
-                <a
-                  href="#how"
-                  className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-3.5 font-semibold text-foreground hover:border-primary transition"
-                >
-                  See how it works
-                </a>
-              </div>
-
-              <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <Check className="h-4 w-4 text-accent" /> Multi-currency payments
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Check className="h-4 w-4 text-accent" /> Global CDN
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Check className="h-4 w-4 text-accent" /> 99.9% uptime
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT: Video */}
-          <div
-            ref={videoWrapRef}
-            className="relative w-full lg:w-1/2 flex items-center justify-center will-change-transform"
-          >
-            <div className="relative w-full max-w-[640px] aspect-[4/3] rounded-3xl overflow-hidden shadow-elegant border border-border/40">
-              <video
-                ref={videoRef}
-                className="w-full h-full object-cover"
-                muted
-                playsInline
-                preload="auto"
-                poster="/first-frame.jpg"
-                loop={!isMobile}
-              >
-                <source src="/hero.webm" type="video/webm" />
-                <source src="/hero.mp4" type="video/mp4" />
-              </video>
-
-              {/* Subtle overlay gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-foreground/10 to-transparent pointer-events-none" />
-
-              {/* Floating stat card */}
-              <motion.div
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-                className="absolute -bottom-4 -left-4 lg:-left-8 rounded-2xl bg-card border border-border shadow-card-soft p-3 flex items-center gap-3"
-              >
-                <div className="h-10 w-10 rounded-xl bg-gradient-primary grid place-items-center">
-                  <Sparkles className="h-4 w-4 text-primary-foreground" />
-                </div>
-                <div className="text-xs">
-                  <p className="font-semibold text-foreground">+127 bookings</p>
-                  <p className="text-muted-foreground">this month globally</p>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </div>
-
-        {/* Scroll hint */}
+      <div className="hero-sticky">
+        {/* ── VIDEO BACKGROUND (full-bleed from frame 0) ── */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5, duration: 1 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 1,
+            y: videoExitY,
+            opacity: videoExitOp,
+            willChange: 'transform, opacity',
+          }}
         >
-          <div className="h-10 w-6 rounded-full border-2 border-muted-foreground/30 flex justify-center pt-2">
-            <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50"
-            />
+          <motion.video
+            ref={videoRef}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            poster="/hero-poster.jpg"
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: 'block',
+              scale: prefersReducedMotion ? 1 : videoScale,
+              willChange: 'transform',
+            }}
+          >
+            <source src="/hero.mp4" type="video/mp4" />
+          </motion.video>
+
+          {/* Dynamic scrim for text contrast */}
+          <motion.div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
+              background:
+                'linear-gradient(180deg, rgba(10,16,36,0.55) 0%, rgba(10,16,36,0.25) 35%, rgba(10,16,36,0.25) 55%, rgba(10,16,36,0.7) 100%)',
+              opacity: scrimOp,
+            }}
+          />
+          {/* Left-edge scrim so text always has contrast on wide screens */}
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
+              background:
+                'linear-gradient(90deg, rgba(10,16,36,0.55) 0%, rgba(10,16,36,0.15) 45%, transparent 70%)',
+            }}
+          />
+        </motion.div>
+
+        {/* ── HERO TEXT (overlaid, fades on scroll) ── */}
+        <motion.div
+          className="hero-text-wrap"
+          style={{ opacity: textColOpacity, y: textColY }}
+        >
+          <div className="hero-text-inner">
+            <motion.h1 className="hero-title" style={{ y: h1Y }}>
+              Manage Your Travel Agency{' '}
+              <span className="hero-accent">Effortlessly.</span>
+            </motion.h1>
+
+            <motion.p className="hero-sub" style={{ y: subY }}>
+              Everything you need to run your agency — bookings, payments,
+              vendors, CRM — in one beautifully simple platform. No code
+              required.
+            </motion.p>
+
+            <motion.div className="hero-ctas" style={{ y: ctaY }}>
+              <a href="#cta" className="btn-primary">
+                Sign up now — it&apos;s free
+                <ArrowRight size={16} />
+              </a>
+              <a href="#demo" className="btn-ghost">
+                <Play size={14} />
+                View Demo
+              </a>
+            </motion.div>
+
+            <motion.div className="trust-row" style={{ y: ctaY }}>
+              <span>✓ No credit card</span>
+              <span>✓ Setup in 10 minutes</span>
+              <span>✓ Cancel anytime</span>
+            </motion.div>
           </div>
+        </motion.div>
+
+        {/* ── OVERLAY TAGLINE (centered, over full-screen video) ── */}
+        <motion.div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+            opacity: overlayOp,
+          }}
+        >
+          <motion.p className="tagline" style={{ y: overlayY }}>
+            Everything your agency needs — in one place.
+          </motion.p>
+        </motion.div>
+
+        {/* ── CLIENT LOGOS (revealed as video slides up) ── */}
+        <motion.div
+          className="logos-shell"
+          style={{ opacity: logosOp, y: logosY }}
+        >
+          <motion.p
+            className="logos-kicker"
+            style={{ opacity: logoTitleOp, y: logoTitleY }}
+          >
+            Trusted by leading travel agencies worldwide
+          </motion.p>
+          <div className="logos-grid">
+            {LOGOS.map((logo, i) => (
+              <LogoItem
+                key={logo.name}
+                logo={logo}
+                index={i}
+                scrollYProgress={scrollYProgress}
+              />
+            ))}
+          </div>
+        </motion.div>
+
+        {/* ── SCROLL HINT ── */}
+        <motion.div className="scroll-hint" style={{ opacity: hintOp }}>
+          <span>scroll</span>
+          <div className="scroll-hint-dot" />
         </motion.div>
       </div>
     </section>
+  );
+}
+
+function LogoItem({
+  logo,
+  index,
+  scrollYProgress,
+}: {
+  logo: { name: string; width: number };
+  index: number;
+  scrollYProgress: MotionValue<number>;
+}) {
+  const delay = index * 0.018;
+  const op = useTransform(
+    scrollYProgress,
+    [0.75 + delay, 0.88 + delay * 0.5],
+    [0, 1]
+  );
+  const y = useTransform(
+    scrollYProgress,
+    [0.75 + delay, 0.88 + delay * 0.5],
+    [24, 0]
+  );
+
+  return (
+    <motion.div style={{ opacity: op, y }}>
+      <div
+        style={{
+          width: logo.width,
+          height: 32,
+          background: '#D1D5DB',
+          borderRadius: 6,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '0.7rem',
+          fontWeight: 600,
+          color: '#6B7280',
+          letterSpacing: '0.05em',
+        }}
+      >
+        {logo.name}
+      </div>
+    </motion.div>
   );
 }

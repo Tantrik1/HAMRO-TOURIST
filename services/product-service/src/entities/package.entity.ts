@@ -5,8 +5,6 @@ import {
 } from 'typeorm';
 import { RegionEntity } from './region.entity';
 import { PackageDestinationEntity } from './package-destination.entity';
-import { FaqEntity } from './faq.entity';
-import { GroupDiscountEntity } from './group-discount.entity';
 
 @Entity('packages')
 @Index(['slug'])  // ✅ Index for slug lookups
@@ -70,11 +68,9 @@ export class PackageEntity {
   @OneToMany(() => PackageDestinationEntity, (pd) => pd.package, { cascade: true })
   packageDestinations: PackageDestinationEntity[];
 
-  @OneToMany(() => FaqEntity, (f) => f.entityId, { cascade: true })
-  faqs: FaqEntity[];
-
-  @OneToMany(() => GroupDiscountEntity, (gd) => gd.entityId, { cascade: true })
-  groupDiscounts: GroupDiscountEntity[];
+  // Polymorphic relations (FAQs, GroupDiscounts) are managed by PolymorphicRelationsService
+  faqs?: any[];
+  groupDiscounts?: any[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

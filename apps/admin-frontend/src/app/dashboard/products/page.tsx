@@ -13,13 +13,14 @@ interface Product {
   coverImageUrl: string | null;
   difficulty?: string;
   durationDays?: number;
+  totalDays?: number;
   basePrice?: number;
   type?: string;
 }
 
 const tabs: { label: string; value: ProductType }[] = [
   { label: 'Tours', value: 'tours' },
-  { label: 'Treks', value: 'treks' },
+  { label: 'Destinations (Treks)', value: 'treks' },
   { label: 'Activities', value: 'activities' },
   { label: 'Packages', value: 'packages' },
 ];
@@ -30,6 +31,18 @@ const statusBadge: Record<string, string> = {
   archived: 'bg-ht-rose/15 text-ht-rose border-ht-rose/30',
 };
 
+function newFormPath(type: ProductType): string {
+  if (type === 'treks') return '/dashboard/destinations/new';
+  if (type === 'activities') return '/dashboard/activities/new';
+  return `/dashboard/${type}/new`;
+}
+
+function editFormPath(type: ProductType, id: string): string {
+  if (type === 'treks') return `/dashboard/destinations/${id}/edit`;
+  if (type === 'activities') return `/dashboard/activities/${id}/edit`;
+  return `/dashboard/${type}/${id}/edit`;
+}
+
 export default function ProductsPage() {
   const [activeTab, setActiveTab] = useState<ProductType>('tours');
   const [products, setProducts] = useState<Product[]>([]);
@@ -38,8 +51,14 @@ export default function ProductsPage() {
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const res = await apiGet<Product[]>(`/products/${activeTab}`);
-      setProducts(res.success ? res.data : []);
+      const res = await apiGet<any>(`/products/${activeTab}`);
+      if (res.success) {
+        const payload: any = res.data;
+        const list: Product[] = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
+        setProducts(list);
+      } else {
+        setProducts([]);
+      }
       setLoading(false);
     }
     load();
@@ -55,40 +74,31 @@ export default function ProductsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="font-display font-bold text-3xl text-ht-text">Products</h1>
-          <p className="font-body text-ht-soft mt-1">Manage your tours, treks, activities, and packages.</p>
+          <h1 className="font-display font-bold text-2xl sm:text-3xl text-ht-text">Products</h1>
+          <p className="font-body text-ht-soft mt-1">Tours, destinations, activities, and packages — all with full media, SEO, FAQs, and discount management.</p>
         </div>
-        <a
-          href={`/dashboard/products/new?type=${activeTab}`}
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-body font-semibold text-sm text-white bg-grad-primary hover:shadow-glow-violet hover:scale-[1.02] transition-all duration-200 min-h-[44px]"
-        >
+        <a href={newFormPath(activeTab)}
+          className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full font-body font-semibold text-sm text-white bg-grad-primary hover:shadow-glow-violet hover:scale-[1.02] transition-all duration-200 min-h-[44px]">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
-          Add {activeTab.slice(0, -1)}
+          New {tabs.find((t) => t.value === activeTab)?.label ?? activeTab}
         </a>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-ht-surface border border-ht-border rounded-xl p-1 mb-6 w-fit">
+      <div className="flex gap-1 bg-ht-surface border border-ht-border rounded-xl p-1 mb-6 w-fit overflow-x-auto">
         {tabs.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setActiveTab(tab.value)}
+          <button key={tab.value} onClick={() => setActiveTab(tab.value)}
             className={`px-4 py-2 rounded-lg font-body text-sm transition-all duration-200 min-h-[36px] ${
-              activeTab === tab.value
-                ? 'bg-ht-violet text-white'
-                : 'text-ht-soft hover:text-ht-text'
-            }`}
-          >
+              activeTab === tab.value ? 'bg-ht-violet text-white' : 'text-ht-soft hover:text-ht-text'
+            }`}>
             {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Product List */}
       {loading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
@@ -106,7 +116,7 @@ export default function ProductsPage() {
       ) : products.length === 0 ? (
         <div className="bg-ht-surface border border-ht-border rounded-xl2 p-12 text-center">
           <p className="font-body text-ht-soft mb-4">No {activeTab} yet.</p>
-          <a href={`/dashboard/products/new?type=${activeTab}`}
+          <a href={newFormPath(activeTab)}
             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-body font-semibold text-sm text-white bg-grad-primary hover:shadow-glow-violet transition-all duration-200">
             Create your first {activeTab.slice(0, -1)}
           </a>
@@ -114,35 +124,37 @@ export default function ProductsPage() {
       ) : (
         <div className="space-y-3">
           {products.map((product) => (
-            <div key={product.id} className="bg-ht-surface border border-ht-border rounded-xl2 p-5 hover:border-ht-violet/40 transition-all duration-300 group">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-xl bg-ht-surface2 overflow-hidden shrink-0">
-                  {product.coverImageUrl ? (
-                    <img src={product.coverImageUrl} alt={product.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-ht-violet/20 to-[#06B6D4]/20">
-                      <svg className="w-6 h-6 text-ht-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14" />
-                      </svg>
+            <div key={product.id} className="bg-ht-surface border border-ht-border rounded-xl2 p-4 sm:p-5 hover:border-ht-violet/40 transition-all duration-300 group">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-ht-surface2 overflow-hidden shrink-0">
+                    {product.coverImageUrl ? (
+                      <img src={product.coverImageUrl} alt={product.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-ht-violet/20 to-[#06B6D4]/20">
+                        <svg className="w-6 h-6 text-ht-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-display font-bold text-sm sm:text-base text-ht-text truncate">{product.title}</h3>
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border ${statusBadge[product.status] || statusBadge.draft}`}>
+                        <span className="w-1 h-1 rounded-full bg-current" />
+                        {product.status}
+                      </span>
+                      {product.difficulty && <span className="font-body text-xs text-ht-soft capitalize">{product.difficulty}</span>}
+                      {product.durationDays && <span className="font-body text-xs text-ht-soft">{product.durationDays}d</span>}
+                      {product.totalDays && <span className="font-body text-xs text-ht-soft">{product.totalDays}d</span>}
+                      {product.basePrice != null && <span className="font-mono text-xs text-[#F97316]">${product.basePrice}</span>}
                     </div>
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-display font-bold text-base text-ht-text truncate">{product.title}</h3>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border ${statusBadge[product.status] || statusBadge.draft}`}>
-                      <span className="w-1 h-1 rounded-full bg-current" />
-                      {product.status}
-                    </span>
-                    {product.difficulty && <span className="font-body text-xs text-ht-soft capitalize">{product.difficulty}</span>}
-                    {product.durationDays && <span className="font-body text-xs text-ht-soft">{product.durationDays}d</span>}
-                    {product.basePrice != null && <span className="font-mono text-xs text-[#F97316]">${product.basePrice}</span>}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <a href={`/dashboard/products/${product.id}?type=${activeTab}`}
+                <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                  <a href={editFormPath(activeTab, product.id)}
                     className="px-3 py-1.5 rounded-lg font-body text-xs text-ht-soft hover:text-ht-text hover:bg-ht-surface2 transition-all min-h-[32px] flex items-center">
                     Edit
                   </a>

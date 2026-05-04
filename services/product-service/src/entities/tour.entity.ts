@@ -6,8 +6,6 @@ import {
 import { RegionEntity } from './region.entity';
 import { TrekEntity } from './trek.entity';
 import { TourActivityEntity } from './tour-activity.entity';
-import { FaqEntity } from './faq.entity';
-import { GroupDiscountEntity } from './group-discount.entity';
 
 @Entity('tours')
 @Index(['slug'])  // ✅ Index for slug lookups
@@ -82,11 +80,9 @@ export class TourEntity {
   @OneToMany(() => TourActivityEntity, (ta) => ta.tour)
   tourActivities: TourActivityEntity[];
 
-  @OneToMany(() => FaqEntity, (f) => f.entityId, { cascade: true })
-  faqs: FaqEntity[];
-
-  @OneToMany(() => GroupDiscountEntity, (gd) => gd.entityId, { cascade: true })
-  groupDiscounts: GroupDiscountEntity[];
+  // Polymorphic relations (FAQs, GroupDiscounts) are managed by PolymorphicRelationsService
+  faqs?: any[];
+  groupDiscounts?: any[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

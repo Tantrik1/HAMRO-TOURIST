@@ -3,7 +3,6 @@ import {
   CreateDateColumn, UpdateDateColumn, OneToMany,
 } from 'typeorm';
 import { RegionEntity } from './region.entity';
-import { FaqEntity } from './faq.entity';
 
 @Entity('countries')
 export class CountryEntity {
@@ -34,8 +33,8 @@ export class CountryEntity {
   @OneToMany(() => RegionEntity, (r) => r.country)
   regions: RegionEntity[];
 
-  @OneToMany(() => FaqEntity, (f) => f.entityId, { cascade: true })
-  faqs: FaqEntity[];
+  // Polymorphic relations (FAQs) are managed by PolymorphicRelationsService
+  faqs?: any[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

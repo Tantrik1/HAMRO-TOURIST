@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { CountryEntity } from '../../entities/country.entity';
 import { CreateCountryDto, UpdateCountryDto } from '../../dto/country.dto';
+import { PolymorphicRelationsService } from '../../common/polymorphic-relations.service';
 
 @Injectable()
 export class CountriesService {
@@ -18,6 +19,7 @@ export class CountriesService {
     private readonly repo: Repository<CountryEntity>,
     private readonly httpService: HttpService,
     private readonly config: ConfigService,
+    private readonly relations: PolymorphicRelationsService,
   ) {}
 
   /**
@@ -30,8 +32,11 @@ export class CountriesService {
 
     await this.enforcePlanLimit(tenantSlug);
 
-    const country = this.repo.create(dto);
-    return this.repo.save(country);
+    const { faqs, ...rest } = dto;
+    const country = this.repo.create(rest);
+    const saved = await this.repo.save(country);
+    await this.relations.saveFaqs('country', saved.id, faqs);
+    return this.findOne(saved.id);
   }
 
   async findAll(): Promise<CountryEntity[]> {
@@ -41,23 +46,29 @@ export class CountriesService {
   async findOne(id: string): Promise<CountryEntity> {
     const country = await this.repo.findOne({ where: { id }, relations: ['regions'] });
     if (!country) throw new NotFoundException(`Country ${id} not found`);
+    country.faqs = await this.relations.loadFaqs('country', country.id);
     return country;
   }
 
   async findBySlug(slug: string): Promise<CountryEntity> {
     const country = await this.repo.findOne({ where: { slug }, relations: ['regions'] });
     if (!country) throw new NotFoundException(`Country "${slug}" not found`);
+    country.faqs = await this.relations.loadFaqs('country', country.id);
     return country;
   }
 
   async update(id: string, dto: UpdateCountryDto): Promise<CountryEntity> {
     const country = await this.findOne(id);
-    Object.assign(country, dto);
-    return this.repo.save(country);
+    const { faqs, ...rest } = dto;
+    Object.assign(country, rest);
+    await this.repo.save(country);
+    await this.relations.saveFaqs('country', id, faqs);
+    return this.findOne(id);
   }
 
   async remove(id: string): Promise<void> {
     const country = await this.findOne(id);
+    await this.relations.deleteAllForEntity('country', id);
     await this.repo.remove(country);
   }
 

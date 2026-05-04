@@ -5,8 +5,6 @@ import {
 } from 'typeorm';
 import { RegionEntity } from './region.entity';
 import { TrekActivityEntity } from './trek-activity.entity';
-import { FaqEntity } from './faq.entity';
-import { GroupDiscountEntity } from './group-discount.entity';
 
 @Entity('treks')
 export class TrekEntity {
@@ -71,11 +69,9 @@ export class TrekEntity {
   @OneToMany(() => TrekActivityEntity, (ta) => ta.trek)
   trekActivities: TrekActivityEntity[];
 
-  @OneToMany(() => FaqEntity, (f) => f.entityId, { cascade: true })
-  faqs: FaqEntity[];
-
-  @OneToMany(() => GroupDiscountEntity, (gd) => gd.entityId, { cascade: true })
-  groupDiscounts: GroupDiscountEntity[];
+  // Polymorphic relations (FAQs, GroupDiscounts) are managed by PolymorphicRelationsService
+  faqs?: any[];
+  groupDiscounts?: any[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

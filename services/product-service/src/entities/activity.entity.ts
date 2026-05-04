@@ -4,8 +4,6 @@ import {
   ManyToOne, JoinColumn, Index, OneToMany,
 } from 'typeorm';
 import { RegionEntity } from './region.entity';
-import { FaqEntity } from './faq.entity';
-import { GroupDiscountEntity } from './group-discount.entity';
 
 @Entity('activities')
 @Index(['slug'])  // ✅ Index for slug lookups
@@ -67,11 +65,9 @@ export class ActivityEntity {
   @Column({ type: 'jsonb', nullable: true })
   media: Record<string, any> | null;
 
-  @OneToMany(() => FaqEntity, (f) => f.entityId, { cascade: true })
-  faqs: FaqEntity[];
-
-  @OneToMany(() => GroupDiscountEntity, (gd) => gd.entityId, { cascade: true })
-  groupDiscounts: GroupDiscountEntity[];
+  // Polymorphic relations (FAQs, GroupDiscounts) are managed by PolymorphicRelationsService
+  faqs?: any[];
+  groupDiscounts?: any[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

@@ -3,15 +3,21 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ActivityEntity } from '../../entities/activity.entity';
 import { CreateActivityDto, UpdateActivityDto } from '../../dto/activity.dto';
+import { PolymorphicRelationsService } from '../../common/polymorphic-relations.service';
 
 @Injectable()
 export class ActivitiesService {
   constructor(
     @InjectRepository(ActivityEntity) private readonly repo: Repository<ActivityEntity>,
+    private readonly relations: PolymorphicRelationsService,
   ) {}
 
   async create(dto: CreateActivityDto): Promise<ActivityEntity> {
-    return this.repo.save(this.repo.create(dto));
+    const { faqs, groupDiscounts, ...rest } = dto;
+    const saved = await this.repo.save(this.repo.create(rest));
+    await this.relations.saveFaqs('activity', saved.id, faqs);
+    await this.relations.saveGroupDiscounts('activity', saved.id, groupDiscounts);
+    return this.findOne(saved.id);
   }
 
   async findAll(regionId?: string, page: number = 1, limit: number = 20): Promise<{ data: ActivityEntity[]; total: number }> {
@@ -54,23 +60,32 @@ export class ActivitiesService {
   async findOne(id: string): Promise<ActivityEntity> {
     const act = await this.repo.findOne({ where: { id }, relations: ['region'] });
     if (!act) throw new NotFoundException(`Activity ${id} not found`);
+    act.faqs = await this.relations.loadFaqs('activity', act.id);
+    act.groupDiscounts = await this.relations.loadGroupDiscounts('activity', act.id);
     return act;
   }
 
   async findBySlug(slug: string): Promise<ActivityEntity> {
     const act = await this.repo.findOne({ where: { slug }, relations: ['region'] });
     if (!act) throw new NotFoundException(`Activity "${slug}" not found`);
+    act.faqs = await this.relations.loadFaqs('activity', act.id);
+    act.groupDiscounts = await this.relations.loadGroupDiscounts('activity', act.id);
     return act;
   }
 
   async update(id: string, dto: UpdateActivityDto): Promise<ActivityEntity> {
     const act = await this.findOne(id);
-    Object.assign(act, dto);
-    return this.repo.save(act);
+    const { faqs, groupDiscounts, ...rest } = dto;
+    Object.assign(act, rest);
+    await this.repo.save(act);
+    await this.relations.saveFaqs('activity', id, faqs);
+    await this.relations.saveGroupDiscounts('activity', id, groupDiscounts);
+    return this.findOne(id);
   }
 
   async remove(id: string): Promise<void> {
     await this.findOne(id);
+    await this.relations.deleteAllForEntity('activity', id);
     await this.repo.softDelete(id);
   }
 }

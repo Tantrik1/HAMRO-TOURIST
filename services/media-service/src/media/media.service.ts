@@ -3,13 +3,20 @@ import { ConfigService } from '@nestjs/config';
 import {
   S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, PutBucketCorsCommand,
 } from '@aws-sdk/client-s3';
+import sharp from 'sharp';
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB limit
+
+// Variant widths (height auto). `original` keeps full resolution.
+const VARIANTS: Array<{ name: 'thumb' | 'card' | 'hero' | 'original'; width?: number }> = [
+  { name: 'thumb', width: 300 },
+  { name: 'card', width: 800 },
+  { name: 'hero', width: 1920 },
+  { name: 'original' }, // full resolution, no resize
+];
+
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
 import { v4 as uuidv4 } from 'uuid';
-import { QUEUES } from '@hamrotourist/shared-types';
 
 @Injectable()
 export class MediaService implements OnModuleInit {
@@ -25,7 +32,6 @@ export class MediaService implements OnModuleInit {
 
   constructor(
     private readonly config: ConfigService,
-    @InjectQueue(QUEUES.IMAGE_PROCESSING) private readonly imageQueue: Queue,
   ) {
     // ✅ Get values without defaults - will be empty string if not set
     this.accountId = this.config.get('CLOUDFLARE_ACCOUNT_ID') || '';
@@ -94,7 +100,7 @@ export class MediaService implements OnModuleInit {
   ): Promise<{ uploadUrl: string; key: string; cdnUrl: string }> {
     const fileId = uuidv4();
     const ext = filename.split('.').pop() || 'bin';
-    const key = `tenants/${tenantSlug}/${category}/${fileId}/original.${ext}`;
+    const key = `tenants/${tenantSlug}/${category}/${fileId}/upload.${ext}`;
 
     const command = new PutObjectCommand({
       Bucket: this.bucket,
@@ -103,24 +109,60 @@ export class MediaService implements OnModuleInit {
     });
 
     const uploadUrl = await getSignedUrl(this.s3, command, { expiresIn: 3600 });
-    const cdnUrl = `${this.cdnBase}/${key}`;
+    // cdnUrl is the FINAL url after register (points to original.webp)
+    const basePath = key.substring(0, key.lastIndexOf('/'));
+    const cdnUrl = `${this.cdnBase}/${basePath}/original.webp`;
 
     this.logger.log(`Presigned URL generated: ${key}`);
     return { uploadUrl, key, cdnUrl };
   }
 
-  async registerUpload(tenantSlug: string, key: string, contentType: string): Promise<{ cdnUrl: string }> {
-    const cdnUrl = `${this.cdnBase}/${key}`;
+  /**
+   * Synchronously converts the uploaded file to WebP variants (original, hero, card, thumb).
+   * Quality: 92 (high, near-lossless) on original; 90 on variants.
+   * Deletes the non-webp upload to save space.
+   * Returns the CDN URL pointing to the high-quality `original.webp`.
+   */
+  async registerUpload(
+    tenantSlug: string, key: string, contentType: string,
+  ): Promise<{ cdnUrl: string; variants: Record<string, string> }> {
+    const basePath = key.substring(0, key.lastIndexOf('/'));
 
-    // Queue image processing job if it's an image
-    if (contentType.startsWith('image/')) {
-      await this.imageQueue.add('process-image', {
-        tenantSlug, key, contentType,
-      });
-      this.logger.log(`Image processing job queued: ${key}`);
+    // For non-images, just return the original URL
+    if (!contentType.startsWith('image/')) {
+      const cdnUrl = `${this.cdnBase}/${key}`;
+      return { cdnUrl, variants: { original: cdnUrl } };
     }
 
-    return { cdnUrl };
+    this.logger.log(`Processing image -> webp: ${key}`);
+
+    const originalBuffer = await this.downloadBuffer(key);
+    const variantUrls: Record<string, string> = {};
+
+    for (const variant of VARIANTS) {
+      // Quality 92 on original (full-res) keeps near-lossless look; variants at 90 are slightly more compressed
+      const quality = variant.name === 'original' ? 92 : 90;
+      const pipeline = sharp(originalBuffer, { failOn: 'none' }).rotate();
+      if (variant.width) {
+        pipeline.resize(variant.width, null, { withoutEnlargement: true });
+      }
+      const buf = await pipeline.webp({ quality, effort: 5 }).toBuffer();
+
+      const variantKey = `${basePath}/${variant.name}.webp`;
+      await this.uploadBuffer(variantKey, buf, 'image/webp');
+      variantUrls[variant.name] = `${this.cdnBase}/${variantKey}`;
+      this.logger.log(`  ↳ ${variant.name}.webp (${buf.length} bytes${variant.width ? `, ${variant.width}px` : ', full'})`);
+    }
+
+    // Delete the non-webp upload to save space (variants already replaced it)
+    try {
+      await this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+      this.logger.log(`  ↳ deleted original upload: ${key}`);
+    } catch (err: any) {
+      this.logger.warn(`Could not delete original upload ${key}: ${err.message}`);
+    }
+
+    return { cdnUrl: variantUrls.original, variants: variantUrls };
   }
 
   getCdnUrl(key: string): string {

@@ -9,6 +9,7 @@ import { TreksModule } from './modules/treks/treks.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
 import { PackagesModule } from './modules/packages/packages.module';
 import { ItinerariesModule } from './modules/itineraries/itineraries.module';
+import { PolymorphicRelationsModule } from './common/polymorphic-relations.module';
 import {
   CountryEntity, RegionEntity, TourEntity, TrekEntity,
   ActivityEntity, PackageEntity, TourActivityEntity, TrekActivityEntity,
@@ -39,6 +40,7 @@ import {
         namingStrategy: new SnakeNamingStrategy(),
       }),
     }),
+    PolymorphicRelationsModule,
     CountriesModule,
     RegionsModule,
     ToursModule,

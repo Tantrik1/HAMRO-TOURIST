@@ -58,14 +58,14 @@ export function ResourcePage({
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="font-display font-bold text-3xl text-ht-text">{title}</h1>
+          <h1 className="font-display font-bold text-2xl sm:text-3xl text-ht-text">{title}</h1>
           <p className="font-body text-ht-soft mt-1">{subtitle}</p>
         </div>
         <a
           href={`${basePath}/new`}
-          className="inline-flex items-center gap-2 bg-grad-primary text-white font-semibold rounded-full px-5 py-2.5 hover:shadow-glow-violet hover:scale-[1.02] transition-all"
+          className="inline-flex items-center justify-center gap-2 bg-grad-primary text-white font-semibold rounded-full px-5 py-2.5 hover:shadow-glow-violet hover:scale-[1.02] transition-all min-h-[44px]"
         >
           <Plus className="w-4 h-4" />
           {newButtonLabel}

@@ -5,16 +5,22 @@ import { TrekEntity } from '../../entities/trek.entity';
 import { TrekActivityEntity } from '../../entities/trek-activity.entity';
 import { CreateTrekDto, UpdateTrekDto } from '../../dto/trek.dto';
 import { LinkActivityDto } from '../../dto/activity-link.dto';
+import { PolymorphicRelationsService } from '../../common/polymorphic-relations.service';
 
 @Injectable()
 export class TreksService {
   constructor(
     @InjectRepository(TrekEntity) private readonly repo: Repository<TrekEntity>,
     @InjectRepository(TrekActivityEntity) private readonly linkRepo: Repository<TrekActivityEntity>,
+    private readonly relations: PolymorphicRelationsService,
   ) {}
 
   async create(dto: CreateTrekDto): Promise<TrekEntity> {
-    return this.repo.save(this.repo.create(dto));
+    const { faqs, groupDiscounts, ...rest } = dto;
+    const saved = await this.repo.save(this.repo.create(rest));
+    await this.relations.saveFaqs('trek', saved.id, faqs);
+    await this.relations.saveGroupDiscounts('trek', saved.id, groupDiscounts);
+    return this.findOne(saved.id);
   }
 
   async findAll(regionId?: string): Promise<TrekEntity[]> {
@@ -34,6 +40,8 @@ export class TreksService {
       where: { id }, relations: ['region', 'trekActivities', 'trekActivities.activity'],
     });
     if (!trek) throw new NotFoundException(`Trek ${id} not found`);
+    trek.faqs = await this.relations.loadFaqs('trek', trek.id);
+    trek.groupDiscounts = await this.relations.loadGroupDiscounts('trek', trek.id);
     return trek;
   }
 
@@ -42,17 +50,24 @@ export class TreksService {
       where: { slug }, relations: ['region', 'trekActivities', 'trekActivities.activity'],
     });
     if (!trek) throw new NotFoundException(`Trek "${slug}" not found`);
+    trek.faqs = await this.relations.loadFaqs('trek', trek.id);
+    trek.groupDiscounts = await this.relations.loadGroupDiscounts('trek', trek.id);
     return trek;
   }
 
   async update(id: string, dto: UpdateTrekDto): Promise<TrekEntity> {
     const trek = await this.findOne(id);
-    Object.assign(trek, dto);
-    return this.repo.save(trek);
+    const { faqs, groupDiscounts, ...rest } = dto;
+    Object.assign(trek, rest);
+    await this.repo.save(trek);
+    await this.relations.saveFaqs('trek', id, faqs);
+    await this.relations.saveGroupDiscounts('trek', id, groupDiscounts);
+    return this.findOne(id);
   }
 
   async remove(id: string): Promise<void> {
     await this.findOne(id);
+    await this.relations.deleteAllForEntity('trek', id);
     await this.repo.softDelete(id);
   }
 

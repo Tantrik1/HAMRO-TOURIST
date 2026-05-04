@@ -1,113 +1,201 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { apiGet } from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
+import { cn } from '@/lib/utils';
+import {
+  Globe, Palette, Layout, MousePointerClick,
+  Map, Mountain, Compass, Package,
+  Users, Contact,
+  BarChart3, TrendingUp, PieChart,
+  Wallet, Building2, Settings, Activity,
+  ArrowRight,
+} from 'lucide-react';
+import { motion } from 'framer-motion';
 
-interface DashboardStats {
-  totalTours: number;
-  totalTreks: number;
-  totalActivities: number;
-  totalPackages: number;
-  totalLeads: number;
-  websitePublished: boolean;
+interface ModuleCard {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  iconBg: string;
+  iconColor: string;
+  href: string;
+  items: string[];
+  comingSoon?: boolean;
 }
 
-const defaultStats: DashboardStats = {
-  totalTours: 0, totalTreks: 0, totalActivities: 0, totalPackages: 0, totalLeads: 0, websitePublished: false,
-};
+const modules: ModuleCard[] = [
+  {
+    id: 'website',
+    title: 'Website Management',
+    description: 'Themes, domains, builder, and drag-and-drop tools',
+    icon: Globe,
+    iconBg: 'bg-ht-cyan/15',
+    iconColor: 'text-ht-cyan',
+    href: '/dashboard/website',
+    items: ['Theme chooser', 'Domain management', 'Custom builder', 'Drag & drop'],
+  },
+  {
+    id: 'treks',
+    title: 'Treks / Tours Management',
+    description: 'Countries, regions, destinations, activities, and packages',
+    icon: Mountain,
+    iconBg: 'bg-ht-violet/15',
+    iconColor: 'text-ht-violet',
+    href: '/dashboard/products',
+    items: ['Countries', 'Regions', 'Destinations', 'Activities', 'Treks', 'Tours', 'Packages'],
+  },
+  {
+    id: 'customers',
+    title: 'Customer Management',
+    description: 'Leads pipeline and customer records',
+    icon: Users,
+    iconBg: 'bg-[#F97316]/15',
+    iconColor: 'text-[#F97316]',
+    href: '/dashboard/crm',
+    items: ['Leads', 'Customers'],
+  },
+  {
+    id: 'analytics',
+    title: 'Analytics',
+    description: 'Website, sales, and finance insights',
+    icon: BarChart3,
+    iconBg: 'bg-[#84CC16]/15',
+    iconColor: 'text-[#84CC16]',
+    href: '/dashboard/analytics',
+    items: ['Website', 'Sales', 'Finance'],
+  },
+  {
+    id: 'finance',
+    title: 'Finance Management',
+    description: 'Invoices, payouts, and financial reports',
+    icon: Wallet,
+    iconBg: 'bg-ht-rose/10',
+    iconColor: 'text-ht-rose/60',
+    href: '#',
+    items: ['Invoices', 'Payouts', 'Reports'],
+    comingSoon: true,
+  },
+  {
+    id: 'vendors',
+    title: 'Vendor Management',
+    description: 'Vendor onboarding and contract management',
+    icon: Building2,
+    iconBg: 'bg-ht-rose/10',
+    iconColor: 'text-ht-rose/60',
+    href: '#',
+    items: ['Vendors', 'Contracts'],
+    comingSoon: true,
+  },
+  {
+    id: 'settings',
+    title: 'Settings',
+    description: 'Account, team, and platform preferences',
+    icon: Settings,
+    iconBg: 'bg-ht-soft/10',
+    iconColor: 'text-ht-soft',
+    href: '/dashboard/settings',
+    items: ['General', 'Team', 'Billing'],
+  },
+  {
+    id: 'recent',
+    title: 'Recent Activities',
+    description: 'Audit trail and recent actions log',
+    icon: Activity,
+    iconBg: 'bg-ht-rose/10',
+    iconColor: 'text-ht-rose/60',
+    href: '#',
+    items: ['Audit logs', 'Actions'],
+    comingSoon: true,
+  },
+];
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
-  const [stats, setStats] = useState<DashboardStats>(defaultStats);
-
-  useEffect(() => {
-    async function loadStats() {
-      const [tours, treks, activities, packages] = await Promise.all([
-        apiGet<any[]>('/products/tours'),
-        apiGet<any[]>('/products/treks'),
-        apiGet<any[]>('/products/activities'),
-        apiGet<any[]>('/products/packages'),
-      ]);
-      setStats({
-        totalTours: tours.success ? tours.data.length : 0,
-        totalTreks: treks.success ? treks.data.length : 0,
-        totalActivities: activities.success ? activities.data.length : 0,
-        totalPackages: packages.success ? packages.data.length : 0,
-        totalLeads: 0,
-        websitePublished: false,
-      });
-    }
-    loadStats();
-  }, []);
-
-  const statCards = [
-    { label: 'Tours', value: stats.totalTours, color: 'text-ht-violet', bg: 'bg-ht-violet/10', icon: 'M3 21V3h18v18H3zm4-4h2v-6H7v6zm4 0h2V7h-2v10zm4 0h2v-4h-2v4z' },
-    { label: 'Treks', value: stats.totalTreks, color: 'text-[#06B6D4]', bg: 'bg-[#06B6D4]/10', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
-    { label: 'Activities', value: stats.totalActivities, color: 'text-[#F97316]', bg: 'bg-[#F97316]/10', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
-    { label: 'Packages', value: stats.totalPackages, color: 'text-[#84CC16]', bg: 'bg-[#84CC16]/10', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
-  ];
 
   return (
-    <div>
+    <div className="max-w-6xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="font-display font-bold text-3xl text-ht-text">
+      <div className="mb-8 sm:mb-10">
+        <h1 className="font-display font-bold text-2xl sm:text-3xl text-ht-text">
           Welcome back, {user?.firstName}
         </h1>
-        <p className="font-body text-ht-soft mt-1">Here&apos;s your agency overview.</p>
+        <p className="font-body text-ht-soft mt-1 text-sm sm:text-base">
+          Choose a module to manage your agency.
+        </p>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {statCards.map((card) => (
-          <div key={card.label} className="bg-ht-surface border border-ht-border rounded-xl2 p-5 hover:border-ht-violet/40 transition-all duration-300">
-            <div className="flex items-center justify-between mb-3">
-              <div className={`w-10 h-10 rounded-xl ${card.bg} flex items-center justify-center`}>
-                <svg className={`w-5 h-5 ${card.color}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d={card.icon} />
-                </svg>
+      {/* Modules Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+        {modules.map((mod, i) => (
+          <motion.div
+            key={mod.id}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05, duration: 0.3 }}
+          >
+            {mod.comingSoon ? (
+              <div className={cn(
+                'relative h-full bg-ht-surface border border-ht-border rounded-xl2 p-5 sm:p-6',
+                'opacity-50 cursor-not-allowed select-none'
+              )}>
+                <div className="absolute top-3 right-3">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-ht-rose/10 text-ht-rose/70 border border-ht-rose/20">
+                    Coming Soon
+                  </span>
+                </div>
+                <ModuleCardContent mod={mod} />
               </div>
-            </div>
-            <p className="font-mono text-3xl font-medium text-ht-text">{card.value}</p>
-            <p className="font-body text-sm text-ht-soft mt-1">{card.label}</p>
-          </div>
+            ) : (
+              <a
+                href={mod.href}
+                className={cn(
+                  'group relative flex flex-col h-full bg-ht-surface border border-ht-border rounded-xl2 p-5 sm:p-6',
+                  'hover:border-ht-violet/40 hover:shadow-lg hover:shadow-ht-violet/5',
+                  'transition-all duration-300'
+                )}
+              >
+                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ArrowRight className="w-4 h-4 text-ht-violet" />
+                </div>
+                <ModuleCardContent mod={mod} />
+              </a>
+            )}
+          </motion.div>
         ))}
       </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        <a href="/dashboard/products/new" className="group bg-ht-surface border border-ht-border rounded-xl2 p-6 hover:border-ht-violet/40 transition-all duration-300">
-          <h3 className="font-display font-bold text-lg text-ht-text mb-2 group-hover:text-ht-violet transition-colors">Add New Tour</h3>
-          <p className="font-body text-sm text-ht-soft">Create a new tour listing with itinerary and pricing.</p>
-        </a>
-        <a href="/dashboard/website" className="group bg-ht-surface border border-ht-border rounded-xl2 p-6 hover:border-[#06B6D4]/40 transition-all duration-300">
-          <h3 className="font-display font-bold text-lg text-ht-text mb-2 group-hover:text-[#06B6D4] transition-colors">Website Builder</h3>
-          <p className="font-body text-sm text-ht-soft">Customize your theme, sections, and publish your site.</p>
-        </a>
-        <a href="/dashboard/crm" className="group bg-ht-surface border border-ht-border rounded-xl2 p-6 hover:border-[#F97316]/40 transition-all duration-300">
-          <h3 className="font-display font-bold text-lg text-ht-text mb-2 group-hover:text-[#F97316] transition-colors">View Leads</h3>
-          <p className="font-body text-sm text-ht-soft">Manage contacts and track your sales pipeline.</p>
-        </a>
-      </div>
-
-      {/* Website Status */}
-      <div className="bg-ht-surface border border-ht-border rounded-xl2 p-6">
-        <h2 className="font-display font-bold text-xl text-ht-text mb-4">Website Status</h2>
-        <div className="flex items-center gap-3">
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium border ${
-            stats.websitePublished
-              ? 'bg-[#84CC16]/15 text-[#84CC16] border-[#84CC16]/30'
-              : 'bg-ht-muted/30 text-ht-soft border-ht-border'
-          }`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-current" />
-            {stats.websitePublished ? 'Published' : 'Draft'}
-          </span>
-          <span className="font-body text-sm text-ht-soft">
-            {user?.tenantSlug ? `${user.tenantSlug}.hamrotourist.com` : 'No subdomain set'}
-          </span>
-        </div>
-      </div>
     </div>
+  );
+}
+
+function ModuleCardContent({ mod }: { mod: ModuleCard }) {
+  const Icon = mod.icon;
+  return (
+    <>
+      <div className={cn('w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-4', mod.iconBg)}>
+        <Icon className={cn('w-5 h-5 sm:w-6 sm:h-6', mod.iconColor)} />
+      </div>
+      <h3 className="font-display font-bold text-base sm:text-lg text-ht-text mb-1.5 pr-6">
+        {mod.title}
+      </h3>
+      <p className="font-body text-xs sm:text-sm text-ht-soft mb-3 sm:mb-4 leading-relaxed">
+        {mod.description}
+      </p>
+      <div className="flex flex-wrap gap-1.5 mt-auto">
+        {mod.items.slice(0, 4).map((item) => (
+          <span
+            key={item}
+            className="px-1.5 py-0.5 rounded-md text-[10px] sm:text-xs font-mono bg-ht-surface2 text-ht-text-faint border border-ht-border"
+          >
+            {item}
+          </span>
+        ))}
+        {mod.items.length > 4 && (
+          <span className="px-1.5 py-0.5 rounded-md text-[10px] sm:text-xs font-mono bg-ht-surface2 text-ht-text-faint border border-ht-border">
+            +{mod.items.length - 4}
+          </span>
+        )}
+      </div>
+    </>
   );
 }

@@ -1,0 +1,392 @@
+HAMROTOURISTWebsite Builder PlatformFull Architecture, Software Documentation & Implementation PlanVersion1.0 — Initial ReleaseTech StackNext.js, NestJS, PostgreSQL, DockerInfrastructureCloudflare, Docker, MicroservicesArchitectureMulti-tenant SaaS (Shopify-grade)1. Executive Summary & VisionHamroTourist is a multi-tenant travel agency SaaS platform serving agencies across Nepal and globally. The Website Builder module is the next critical product evolution — enabling every tenant agency to launch, manage, and publish a fully branded, SEO-optimized travel website without writing a single line of code.Inspired by Shopify's theme architecture but purpose-built for the travel vertical, this system will provide:Six professionally designed, mobile-first themes tailored for travel agenciesA visual drag-and-drop section editor with live previewDeep database integration: packages, destinations, regions, countries, testimonialsMulti-theme workspace: one published, unlimited drafts, instant switchingCloudflare-powered hosting: {agency}.hamrotourist.com by default, custom domains for premiumFull tenant isolation with per-tenant content, media, and configurationThis document covers the complete software architecture, database schema, service design, API contracts, Cloudflare integration, implementation phases, and technical decisions required to build this system.2. Current Architecture Analysis2.1 Existing MicroservicesThe platform already operates a mature microservices architecture. Each service is independently deployable within Docker. The following services are in production:ServiceRuntimeResponsibilityDomainapi-gatewayNestJSRequest routing, auth middleware, rate limiting, tenant resolutionGatewayauth-serviceNestJSJWT issuance, refresh tokens, OAuth2, tenant-scoped rolesIdentitybilling-serviceNestJSSubscription plans, payment processing, feature gating by planCommercebooking-serviceNestJSTour booking lifecycle, availability, confirmations, itinerariesCorecrm-serviceNestJSCustomer profiles, inquiry management, lead trackingCRMdomain-serviceNestJSCustom domain management, DNS validation, certificate trackingInframedia-serviceNestJSImage/video upload, CDN delivery, transformation, tenant storageMedianotification-serviceNestJSEmail, SMS, in-app notifications, webhook dispatchNotifyproduct-serviceNestJSTour packages, destinations, pricing, availability, regionsCoretenant-serviceNestJSAgency onboarding, tenant config, plan management, settingsPlatformwebsite-builder-serviceNestJSNEW — Theme engine, sections, editor API, publishing pipelineBuilder2.2 Frontend ApplicationsApplicationFrameworkPurposeAudienceadmin-frontendNext.jsAgency admin panel — products, bookings, CRM, settings, website builder editorAgencymarketing-siteNext.jsHamroTourist.com — public marketing, pricing, agency acquisitionPlatformsuper-adminNext.jsPlatform ops — tenant management, billing oversight, theme deploymentPlatformwebsite-rendererNext.jsNEW — Multi-tenant SSR/SSG engine serving agency public websitesPublic2.3 Shared PackagesPackageDescriptionshared-typesTypeScript interfaces, DTOs, enums, and Zod schemas shared across all services and appstheme-adventure-boldNEW — Adventure & trekking theme: bold typography, dramatic imagery, outdoor aesthetictheme-heritage-classicNEW — Cultural heritage theme: traditional motifs, warm colors, storytelling layouttheme-serene-journeyNEW — Luxury & wellness theme: minimal, whitespace-heavy, premium positioningui-componentsShared React component library (design system) used by admin and super-adminArchitecture InsightThe existing domain-service already handles custom domain tracking. The website-builder-service will consume it via internal gRPC. The media-service already provides CDN URLs — all theme images and uploaded assets will flow through it. The product-service exposes packages, regions, and destinations that will power dynamic sections in the builder.3. Website Builder Architecture3.1 System OverviewThe website builder consists of four integrated subsystems working in concert:SubsystemRoleLocationTheme EngineManages theme packages, version control, and compilation pipelinepackages/theme-*Editor APIREST + WebSocket API powering the visual drag-and-drop editorwebsite-builder-servicePublishing PipelineBuilds, caches, and deploys static/SSR pages per tenantwebsite-rendererDomain RouterCloudflare Workers route requests to the correct tenant rendererCloudflare EdgeMedia PipelineHandles all uploads and CDN delivery through existing media-servicemedia-serviceData IntegrationLive queries to product-service for packages, regions, countriesproduct-service3.2 Theme System Architecture3.2.1 Six Production ThemesEach theme is a self-contained Next.js package with its own components, styles, and configuration schema. Themes are versioned and deployed independently.Theme IDBest ForDesign LanguageSignature Sectionstheme-adventure-boldTrekking, adventure tours, outdoor activitiesBold sans-serif, high contrast, dramatic hero sectionsFull-width video hero, trek cards, altitude chartstheme-heritage-classicCultural tours, heritage sites, historical travelSerif headings, warm earth tones, ornate bordersStory sections, cultural galleries, timeline layoutstheme-serene-journeyLuxury travel, wellness retreats, premium packagesMinimal, generous whitespace, muted paletteFull-screen imagery, testimonial carousels, booking modalstheme-urban-explorerCity tours, backpacker, budget-friendly agenciesVibrant, grid-heavy, social-media-inspiredMap integrations, grid galleries, quick filterstheme-mountain-vistaHimalayan & mountain-specific agencies, photography toursPanoramic, nature-first, earthy greens & bluesPanoramic sliders, elevation widgets, seasonal badgestheme-family-voyageFamily travel, group packages, school tripsFriendly rounded fonts, warm yellows, playful iconsAge-filter package grid, family-safety badges, FAQ blocks3.2.2 Theme Package StructureEvery theme follows an identical directory contract enforced at CI time:Plaintextpackages/theme-adventure-bold/
+├── src/
+│   ├── components/         # Section components
+│   │   ├── sections/
+│   │   │   ├── HeroSection/
+│   │   │   ├── PackageGrid/
+│   │   │   ├── TestimonialCarousel/
+│   │   │   ├── RegionExplorer/
+│   │   │   ├── CountryBanner/
+│   │   │   ├── DestinationMap/
+│   │   │   ├── BlogFeed/
+│   │   │   ├── ContactForm/
+│   │   │   ├── Navbar/
+│   │   │   └── Footer/
+│   │   └── ui/             # Theme-specific primitives
+│   ├── schema/
+│   │   └── theme.schema.ts # JSON schema for all editable fields
+│   ├── styles/
+│   │   ├── tokens.css      # CSS design tokens (colors, fonts, spacing)
+│   │   └── globals.css
+│   ├── previews/           # Static screenshots per breakpoint
+│   │   ├── desktop.jpg
+│   │   ├── tablet.jpg
+│   │   └── mobile.jpg
+│   └── index.ts            # Theme manifest export
+├── theme.config.ts          # Theme metadata, default values
+└── package.json
+3.2.3 Theme Schema ContractEvery editable field in a theme is declared in a strongly-typed schema. This schema drives the editor panel automatically — no additional configuration needed.TypeScript// theme.schema.ts example (adventure-bold hero section)
+export const HeroSectionSchema = {
+  type: 'section',
+  id: 'hero',
+  label: 'Hero Banner',
+  fields: {
+    heading:     { type: 'text',   label: 'Main Heading',    maxLength: 80 },
+    subheading:  { type: 'text',   label: 'Subheading',      maxLength: 160 },
+    ctaText:     { type: 'text',   label: 'Button Text',     maxLength: 30 },
+    ctaLink:     { type: 'url',    label: 'Button URL' },
+    backgroundImage: { type: 'media', label: 'Background Image', accept: 'image' },
+    overlayOpacity: { type: 'range', label: 'Overlay Darkness', min: 0, max: 100 },
+    showSearch:  { type: 'toggle', label: 'Show Package Search Bar' },
+    layout:      { type: 'select', label: 'Layout Style',
+                   options: ['center', 'left-aligned', 'split-screen'] },
+  }
+}
+3.3 Multi-Theme WorkspaceThis is the core Shopify-inspired workflow that separates HamroTourist from generic website builders:FeatureBehaviorPublished ThemeThe single live theme serving real visitors. Only one can be published at a time per tenant. Changing the published theme triggers an atomic swap with zero downtime.Draft ThemesAny number of inactive theme instances. Agencies can fully customize a draft without affecting the live site. Perfect for seasonal campaigns, redesigns, or experimenting.Theme InstancesEach theme instance is a full copy of a base theme plus all customizations: section order, content, colors, fonts, media. Stored as structured JSON in PostgreSQL.Snapshot / Version HistoryEvery publish action saves a versioned snapshot. Agencies can roll back to any previous version with one click. Snapshots are stored per tenant per theme.Preview ModeDraft themes can be previewed via a secret-token URL: ?preview_token=<uuid>. Share with clients before going live. Token expires in 7 days.Theme DuplicationAny theme instance can be duplicated. Useful for creating a seasonal variant from the current live theme without starting from scratch.Key RuleOne PUBLISHED theme per tenant at all times. All others remain DRAFT. Publishing a new theme atomically unpublishes the previous one. A full snapshot is saved before every publish to enable instant rollback.4. Database Schema Design4.1 Core Website Builder TablesTable: website_themesStores all theme instances (both published and drafts) per tenant.SQLCREATE TABLE website_themes (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id        UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  theme_id         VARCHAR(64) NOT NULL,       -- e.g. 'adventure-bold'
+  name             VARCHAR(128) NOT NULL,       -- e.g. 'My Summer Theme'
+  status           VARCHAR(16) NOT NULL        -- 'published' | 'draft' | 'archived'
+                   CHECK (status IN ('published','draft','archived')),
+  published_at     TIMESTAMPTZ,
+  configuration    JSONB NOT NULL DEFAULT '{}', -- full theme customization JSON
+  version          INTEGER NOT NULL DEFAULT 1,
+  created_by       UUID NOT NULL,
+  created_at       TIMESTAMPTZ DEFAULT now(),
+  updated_at       TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (tenant_id, status) WHERE status = 'published'  -- enforce single live theme
+);
+CREATE INDEX idx_website_themes_tenant ON website_themes(tenant_id);
+CREATE INDEX idx_website_themes_status ON website_themes(tenant_id, status);
+Table: theme_snapshotsImmutable version history for rollback capability.SQLCREATE TABLE theme_snapshots (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  theme_id         UUID NOT NULL REFERENCES website_themes(id) ON DELETE CASCADE,
+  tenant_id        UUID NOT NULL,
+  snapshot_label   VARCHAR(128),               -- 'v3 - Pre-holiday Launch'
+  configuration    JSONB NOT NULL,             -- frozen copy at time of snapshot
+  version          INTEGER NOT NULL,
+  published_by     UUID NOT NULL,
+  created_at       TIMESTAMPTZ DEFAULT now()
+);
+Table: website_pagesTracks all pages within a theme instance (Home, About, Contact, custom pages).SQLCREATE TABLE website_pages (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  theme_id         UUID NOT NULL REFERENCES website_themes(id) ON DELETE CASCADE,
+  tenant_id        UUID NOT NULL,
+  slug             VARCHAR(128) NOT NULL,       -- 'home', 'about', 'packages', custom
+  title            VARCHAR(256) NOT NULL,
+  seo_title        VARCHAR(70),
+  seo_description  VARCHAR(160),
+  seo_og_image     TEXT,
+  is_system_page   BOOLEAN DEFAULT false,       -- system pages can't be deleted
+  sort_order       INTEGER DEFAULT 0,
+  is_published     BOOLEAN DEFAULT true,
+  sections_order   UUID[] NOT NULL DEFAULT '{}', -- ordered section IDs
+  created_at       TIMESTAMPTZ DEFAULT now(),
+  updated_at       TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (theme_id, slug)
+);
+Table: page_sectionsIndividual content sections placed on a page, with full content and display settings.SQLCREATE TABLE page_sections (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  page_id          UUID NOT NULL REFERENCES website_pages(id) ON DELETE CASCADE,
+  theme_id         UUID NOT NULL,
+  tenant_id        UUID NOT NULL,
+  section_type     VARCHAR(64) NOT NULL,        -- 'hero', 'package-grid', 'testimonials'
+  sort_order       INTEGER NOT NULL DEFAULT 0,
+  content          JSONB NOT NULL DEFAULT '{}', -- all editable field values
+  settings         JSONB NOT NULL DEFAULT '{}', -- visibility, spacing, bg color
+  is_visible       BOOLEAN DEFAULT true,
+  created_at       TIMESTAMPTZ DEFAULT now(),
+  updated_at       TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_page_sections_page ON page_sections(page_id, sort_order);
+Table: tenant_domain_configsPer-tenant domain configuration driving Cloudflare routing.SQLCREATE TABLE tenant_domain_configs (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id           UUID NOT NULL UNIQUE REFERENCES tenants(id),
+  subdomain           VARCHAR(63) NOT NULL UNIQUE, -- 'adventures' → adventures.hamrotourist.com
+  custom_domain       VARCHAR(253),                 -- 'www.nepaladventures.com'
+  custom_domain_status VARCHAR(16)                  -- 'pending'|'active'|'failed'
+                       CHECK (custom_domain_status IN ('pending','active','failed')),
+  ssl_status          VARCHAR(16),                  -- 'pending'|'active'|'failed'
+  cloudflare_zone_id  VARCHAR(64),
+  dns_verification_token VARCHAR(64),
+  verified_at         TIMESTAMPTZ,
+  created_at          TIMESTAMPTZ DEFAULT now(),
+  updated_at          TIMESTAMPTZ DEFAULT now()
+);
+Table: website_navigationNavigation menu structure per theme instance, with nested menu support.SQLCREATE TABLE website_navigation (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  theme_id         UUID NOT NULL REFERENCES website_themes(id) ON DELETE CASCADE,
+  tenant_id        UUID NOT NULL,
+  location         VARCHAR(32) NOT NULL         -- 'header', 'footer-col-1', 'footer-col-2'
+                   CHECK (location IN ('header','footer-col-1','footer-col-2','footer-col-3')),
+  items            JSONB NOT NULL DEFAULT '[]', -- [{label, url, target, children:[]}]
+  updated_at       TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (theme_id, location)
+);
+Table: theme_media_assetsTracks all media uploaded by a tenant through the website builder (proxied via media-service).SQLCREATE TABLE theme_media_assets (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id        UUID NOT NULL,
+  theme_id         UUID,                        -- NULL = global tenant asset
+  media_service_id UUID NOT NULL,               -- ID in media-service
+  cdn_url          TEXT NOT NULL,
+  filename         VARCHAR(256),
+  mime_type        VARCHAR(64),
+  size_bytes       BIGINT,
+  alt_text         VARCHAR(256),
+  uploaded_at      TIMESTAMPTZ DEFAULT now()
+);
+Table: website_global_settingsPer-tenant global settings: branding, contact info, social links, analytics, integrations.SQLCREATE TABLE website_global_settings (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id        UUID NOT NULL UNIQUE,
+  agency_name      VARCHAR(128),
+  tagline          VARCHAR(256),
+  logo_url         TEXT,
+  favicon_url      TEXT,
+  primary_color    VARCHAR(7),                  -- hex color override
+  secondary_color  VARCHAR(7),
+  contact_email    VARCHAR(256),
+  contact_phone    VARCHAR(32),
+  contact_address  TEXT,
+  social_links     JSONB DEFAULT '{}',          -- {facebook, instagram, twitter, youtube}
+  analytics        JSONB DEFAULT '{}',          -- {google_analytics_id, meta_pixel_id}
+  custom_scripts   TEXT,                        -- head/body injection (premium only)
+  created_at       TIMESTAMPTZ DEFAULT now(),
+  updated_at       TIMESTAMPTZ DEFAULT now()
+);
+5. website-builder-service Architecture5.1 NestJS Module StructurePlaintextsrc/
+├── modules/
+│   ├── themes/
+│   │   ├── themes.controller.ts      # REST endpoints for theme CRUD
+│   │   ├── themes.service.ts         # Business logic
+│   │   ├── themes.repository.ts      # DB queries (TypeORM)
+│   │   └── dto/                      # Input validation DTOs
+│   ├── sections/
+│   │   ├── sections.controller.ts    # Section CRUD, reorder
+│   │   ├── sections.service.ts
+│   │   └── section-renderer.service.ts  # Renders sections for SSR
+│   ├── pages/
+│   │   ├── pages.controller.ts
+│   │   ├── pages.service.ts
+│   │   └── seo.service.ts            # SEO meta generation, sitemap
+│   ├── publishing/
+│   │   ├── publisher.service.ts      # Orchestrates publish pipeline
+│   │   ├── cache-invalidation.service.ts # Cloudflare cache bust
+│   │   └── snapshot.service.ts       # Snapshot creation and restore
+│   ├── domains/
+│   │   ├── domain.controller.ts      # Subdomain + custom domain mgmt
+│   │   ├── domain.service.ts         # Cloudflare API integration
+│   │   └── dns-verification.service.ts
+│   ├── editor/
+│   │   ├── editor.gateway.ts         # WebSocket gateway for live preview
+│   │   └── collaboration.service.ts  # Multi-tab conflict resolution
+│   ├── navigation/
+│   │   └── navigation.service.ts
+│   ├── media/
+│   │   └── media-proxy.service.ts    # Calls media-service for uploads
+│   └── analytics/
+│       └── website-analytics.service.ts
+├── integrations/
+│   ├── product-service.client.ts     # gRPC client to product-service
+│   ├── cloudflare.client.ts          # Cloudflare API wrapper
+│   └── media-service.client.ts
+└── common/
+    ├── guards/tenant-isolation.guard.ts
+    ├── interceptors/audit-log.interceptor.ts
+    └── pipes/theme-validation.pipe.ts
+5.2 Complete API EndpointsTheme ManagementMethodEndpointDescriptionPlan GateGET/themesList all theme instances for tenantAll plansPOST/themesCreate new theme instance from base themeAll plansGET/themes/:idGet single theme with full configurationAll plansPATCH/themes/:idUpdate theme name, configurationAll plansDELETE/themes/:idArchive a draft themeAll plansPOST/themes/:id/publishPublish theme (atomic swap, creates snapshot)All plansPOST/themes/:id/duplicateDuplicate any theme instance as new draftAll plansPOST/themes/:id/preview-tokenGenerate 7-day preview share tokenAll plansGET/themes/:id/snapshotsList all publish snapshots for this themeAll plansPOST/themes/:id/rollback/:snapIdRestore configuration from a snapshotAll plansPage & Section ManagementMethodEndpointDescriptionPlanGET/themes/:id/pagesList all pages for a theme instanceAllPOST/themes/:id/pagesCreate a new custom pageAllPATCH/themes/:id/pages/:pageIdUpdate page metadata, SEO, slugAllDELETE/themes/:id/pages/:pageIdDelete a custom page (not system pages)AllGET/themes/:id/pages/:pageId/sectionsList all sections in a page (ordered)AllPOST/themes/:id/pages/:pageId/sectionsAdd a new section to a pageAllPATCH/themes/:id/pages/:pageId/sections/:sIdUpdate section content and settingsAllDELETE/themes/:id/pages/:pageId/sections/:sIdRemove section from pageAllPUT/themes/:id/pages/:pageId/sections/reorderReorder sections (full order array)AllGET/themes/:id/navigationGet navigation menusAllPUT/themes/:id/navigation/:locationUpdate a nav menu (header/footer)AllDomain ManagementMethodEndpointDescriptionPlanGET/domainsGet current domain config for tenantAllPUT/domains/subdomainChange subdomain (with availability check)AllPOST/domains/customAdd custom domain (premium only)PremiumGET/domains/custom/verifyCheck DNS verification statusPremiumDELETE/domains/customRemove custom domain, revert to subdomainPremiumPOST/domains/custom/sslTrigger SSL certificate provisioningPremiumData Integration Endpoints (Read-only)MethodEndpointDescriptionPlanGET/data/packagesPaginated tour packages for this tenant (from product-service)AllGET/data/regionsRegions associated with this tenant's packagesAllGET/data/countriesCountries in tenant package catalogAllGET/data/destinationsDestinations with metadata and imagesAllGET/data/testimonialsCustomer testimonials from CRM for this tenantAll6. website-renderer Application6.1 Architecture OverviewThe website-renderer is a Next.js application that serves as the public-facing website for every tenant agency. It is a single deployment that dynamically renders content for any tenant based on the incoming hostname.6.2 Next.js Routing StrategyPlaintextapps/website-renderer/
+├── app/
+│   ├── layout.tsx                  # Root layout (reads tenant from hostname)
+│   ├── page.tsx                    # Home page → dynamic sections renderer
+│   ├── [slug]/
+│   │   └── page.tsx                # All custom pages via slug
+│   ├── packages/
+│   │   ├── page.tsx                # Package listing (filtered by tenant)
+│   │   └── [packageSlug]/
+│   │       └── page.tsx            # Individual package detail page
+│   ├── destinations/
+│   │   └── [destinationSlug]/
+│   │       └── page.tsx
+│   ├── about/page.tsx
+│   ├── contact/page.tsx
+│   └── api/
+│       ├── revalidate/route.ts     # On-demand ISR cache bust (called by publisher)
+│       └── preview/route.ts        # Preview mode handler
+├── lib/
+│   ├── tenant-resolver.ts          # Resolves tenant from hostname
+│   ├── theme-loader.ts             # Loads correct theme package for tenant
+│   ├── section-renderer.tsx        # Maps section_type → React component
+│   └── api-client.ts               # Fetches data from website-builder-service
+└── middleware.ts                   # Hostname-based tenant resolution + preview token
+6.3 Tenant Resolution MiddlewareTypeScript// middleware.ts — runs at Cloudflare edge via Next.js
+export function middleware(request: NextRequest) {
+  const hostname = request.headers.get('host') || '';
+
+  // adventures.hamrotourist.com → tenantSlug = 'adventures'
+  // www.nepaladventures.com     → lookup in domain table
+  const tenantSlug = hostname.replace('.hamrotourist.com', '');
+
+  const response = NextResponse.next();
+  response.headers.set('x-tenant-slug', tenantSlug);
+  response.headers.set('x-hostname', hostname);
+
+  // Preview mode via token
+  const previewToken = request.nextUrl.searchParams.get('preview_token');
+  if (previewToken) {
+    response.headers.set('x-preview-token', previewToken);
+  }
+  return response;
+}
+6.4 Section RendererThe section renderer is the heart of the website renderer — it maps a section type string and its JSONB configuration to the correct React component from the active theme:TypeScript// section-renderer.tsx
+import * as AdventureBold from '@hamrotourist/theme-adventure-bold';
+import * as HeritageClassic from '@hamrotourist/theme-heritage-classic';
+// ... all 6 themes
+
+const THEME_MAP: Record<string, Record<string, React.ComponentType<any>>> = {
+  'adventure-bold':    AdventureBold.sections,
+  'heritage-classic':  HeritageClassic.sections,
+  // ...
+};
+
+export function renderSections(themeId: string, sections: PageSection[]) {
+  const themeComponents = THEME_MAP[themeId];
+  return sections
+    .filter(s => s.is_visible)
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map(section => {
+      const Component = themeComponents[section.section_type];
+      if (!Component) return null;
+      return <Component key={section.id} {...section.content} settings={section.settings} />;
+    });
+}
+6.5 Rendering StrategyPage TypeStrategy & ReasoningHome PageISR (Incremental Static Regeneration) with 60s revalidate + on-demand revalidation on publishPackage ListingSSR with edge caching — packages change frequently, need real-time availabilityPackage DetailISR per slug with 5min revalidate + on-demand bust when package is updatedDestination PagesSSG at build time + ISR revalidation when destination data changesCustom PagesISR with 300s revalidate — changes infrequent after publishContact / FormsSSR — must be server-rendered for form submission handlingPreview ModeFully SSR — bypasses all caches, reads draft theme directly from API7. Cloudflare Architecture & Domain Strategy7.1 Subdomain Routing (Default — All Plans)Every agency gets a subdomain under hamrotourist.com immediately upon account creation. This is zero-configuration from the agency's perspective.PropertyValuePattern{agency-slug}.hamrotourist.comDNS RecordWildcard A/CNAME: *.hamrotourist.com → website-renderer cluster IPCloudflare ConfigWildcard SSL certificate via Cloudflare Universal SSL (auto-renewed)RoutingCloudflare Worker reads hostname, passes as x-tenant-slug header to rendererCachingCloudflare caches ISR pages at edge. Cache-Control: s-maxage=60, stale-while-revalidatePerformanceCloudflare Argo Smart Routing + HTTP/3 + Brotli compression enabled by default7.2 Custom Domain Routing (Premium Plans)Premium agencies can connect their own domain (e.g., www.nepaladventures.com). The workflow is fully automated via Cloudflare API:Agency enters custom domain in admin panel → domain-service validates formatSystem generates a DNS TXT verification token and shows it to the agencyAgency adds TXT record at their DNS registrar: _hamrotourist-verify.domain.com → <token>Cloudflare API polls DNS (every 5 min) until TXT record resolves correctlyOn verification: Cloudflare Zone is created (or Custom Hostname if shared zone), SSL provisionedCloudflare Worker is updated to route custom domain → same renderer with tenant contextDomain status in dashboard updates to ACTIVE with green indicator7.3 Cloudflare Worker LogicJavaScript// cloudflare-worker.js — deployed at Cloudflare edge
+addEventListener('fetch', event => event.respondWith(handleRequest(event.request)));
+
+async function handleRequest(request) {
+  const url = new URL(request.url);
+  const hostname = url.hostname;
+
+  let tenantSlug;
+
+  if (hostname.endsWith('.hamrotourist.com')) {
+    // Subdomain routing
+    tenantSlug = hostname.replace('.hamrotourist.com', '');
+  } else {
+    // Custom domain — lookup from KV store (synced from DB on domain changes)
+    tenantSlug = await DOMAIN_MAP.get(hostname);
+    if (!tenantSlug) return new Response('Agency not found', { status: 404 });
+  }
+
+  // Forward to website-renderer with tenant context
+  const rendererUrl = new URL(request.url);
+  rendererUrl.hostname = 'website-renderer.internal.hamrotourist.com';
+
+  const proxiedRequest = new Request(rendererUrl.toString(), {
+    method: request.method,
+    headers: {
+      ...Object.fromEntries(request.headers),
+      'x-tenant-slug': tenantSlug,
+      'x-original-host': hostname,
+    },
+    body: request.body
+  });
+  return fetch(proxiedRequest);
+}
+7.4 Cloudflare KV for Domain MappingCustom domain → tenant slug mappings are stored in Cloudflare KV for sub-millisecond edge lookup:PropertyValueKV Store NameDOMAIN_MAPKey formatwww.nepaladventures.comValue formatadventures (tenant slug)Sync triggerdomain-service emits event on domain activation/deactivation → Worker syncs KVTTLNo TTL — explicit deletion on domain removalFallbackIf KV miss → query domain-service API with 5s timeout → cache result7.5 Cache Invalidation on PublishWhen an agency publishes changes, the publishing pipeline automatically busts Cloudflare cache:TypeScript// cache-invalidation.service.ts
+async invalidateForTenant(tenantSlug: string, paths: string[] = ['/*']) {
+  const hostname = ${tenantSlug}.hamrotourist.com;
+
+  // 1. Purge Cloudflare cache for subdomain
+  await this.cloudflare.purgeCache({
+    zone_id: process.env.CF_ZONE_ID,
+    files: paths.map(p => https://${hostname}${p})
+  });
+
+  // 2. Trigger Next.js ISR revalidation
+  await fetch(${process.env.RENDERER_URL}/api/revalidate, {
+    method: 'POST',
+    headers: { 'x-revalidate-secret': process.env.REVALIDATE_SECRET },
+    body: JSON.stringify({ tenantSlug, paths })
+  });
+
+  // 3. If custom domain active, purge that too
+  const customDomain = await this.domainService.getActiveDomain(tenantSlug);
+  if (customDomain) {
+    await this.cloudflare.purgeCache({
+      zone_id: customDomain.cloudflare_zone_id,
+      files: paths.map(p => https://${customDomain.custom_domain}${p})
+    });
+  }
+}
+8. Drag-and-Drop Visual Editor8.1 Editor ArchitectureThe editor lives in admin-frontend and communicates with website-builder-service via REST and WebSocket. It is built as a dedicated route within the existing Next.js admin panel:Plaintextapps/admin-frontend/
+└── app/
+    └── website/
+        ├── page.tsx                  # Theme overview dashboard
+        ├── [themeId]/
+        │   ├── editor/
+        │   │   ├── page.tsx          # Main editor workspace
+        │   │   ├── EditorCanvas.tsx  # Live preview iframe
+        │   │   ├── SectionSidebar.tsx # Drag section palette
+        │   │   ├── SettingsPanel.tsx  # Field editor (schema-driven)
+        │   │   ├── PageTree.tsx       # Page navigation sidebar
+        │   │   └── TopBar.tsx         # Save/Preview/Publish controls
+        │   └── settings/
+        │       └── page.tsx          # Theme settings, colors, fonts
+8.2 Editor State ManagementThe editor uses Zustand for local state with optimistic updates and periodic auto-save:FeatureImplementationLocal State (Zustand)Current page sections in memory, selected section, drag state, unsaved changes indicatorAuto-saveDebounced 2-second auto-save after any change. Shows "Saving..." indicator. Never loses work.Conflict PreventionWebSocket heartbeat detects if another tab/user opened same theme. Shows warning modal.Undo/RedoFull undo/redo stack (50 steps) managed in Zustand. Cmd+Z / Cmd+Y supported.Optimistic UpdatesUI updates instantly on section edits. Server save runs in background. On failure: revert + toast.Preview SyncEditor sends postMessage to preview iframe after each save. Iframe rerenders affected section only.8.3 Drag-and-Drop Section ManagementBuilt with @dnd-kit/core (accessible, performance-optimized, touch-friendly):Section palette in left sidebar: grouped by type (Hero, Content, Packages, Social, Conversion, Footer)Drag from palette → drop on canvas to insert at positionDrag existing sections within canvas to reorder (sortable with smooth animation)Keyboard navigation: arrow keys to reorder, Delete key to remove sectionMobile editor: tap-to-select + modal controls (no drag on mobile)Each section shows visibility toggle, duplicate, move up/down, and delete controls on hover8.4 Settings Panel — Schema-Driven FieldsWhen a section is selected, the Settings Panel renders automatically based on the section's schema. No hardcoded UI required:Field TypeEditor BehaviortextSingle-line text input with character counter and optional maxLength enforcementtextareaMulti-line rich text with basic formatting (bold, italic, links)urlURL input with live validation and external link previewmediaImage/video uploader with drag-drop, CDN URL preview, alt text fieldcolorColor picker with hex input, opacity slider, and theme color presetsselectDropdown with predefined options from schematoggleBoolean switch for show/hide, enable/disable fieldsrangeNumeric slider with min/max/step from schema definitionpackage-selectorSearch & multi-select from tenant's packages (live from product-service)region-selectorMulti-select from tenant's active regions (live from product-service)country-selectorMulti-select countries with flag icons (live from product-service)icon-pickerVisual icon selector from theme's included icon setfont-pickerGoogle Fonts browser with live preview (premium themes only)link-listOrdered list of {label, url} pairs — for nav links, button groups8.5 Live PreviewThe editor canvas shows a real-time preview of the website in an iframe. The preview renders at actual screen size and updates within ~300ms of any change:Preview URL: /preview/{themeId}/{pageSlug}?preview_token={token} — served by website-rendererThree preview modes: Desktop (1280px), Tablet (768px), Mobile (375px) — toggled in toolbarChanges sync via postMessage API from editor → iframe (no full reload on field changes)Full page reload only on section add/remove/reorder (structural changes)Preview mode bypasses Cloudflare cache and reads draft state directly9. Section Library (All Themes)9.1 Complete Section CatalogEvery theme implements all sections from this catalog, with theme-specific visual styling. Agencies drag these onto pages from the editor palette.Section IDCategoryDescriptionAvailabilityhero-bannerCoreFull-width hero with heading, subheading, CTA, background image/videoAll Themespackage-gridCommerceGrid of tour packages with filtering by region, country, categoryAll Themespackage-carouselCommerceHorizontal scrolling package carousel with quick-view modalAll Themesfeatured-packagesCommerceEditorial featured packages with custom descriptions and imageryAll Themesregion-explorerDiscoveryInteractive region cards linked to filtered package listingAll Themescountry-gridDiscoveryCountry flags/images grid with package count badgesAll Themesdestination-mapDiscoveryInteractive map (Leaflet/Mapbox) with destination markersAll Themessearch-barConversionPackage search by keyword, region, date range, price filterAll ThemestestimonialsSocialCustomer reviews carousel from CRM data + manual entriesAll Themesstats-counterTrustAnimated number counters: trips completed, countries, travelers, ratingAll Themesteam-sectionTrustAgency staff profiles with photo, name, title, social linksAll Themesimage-galleryMediaMasonry or grid photo gallery with lightbox viewerAll Themesvideo-sectionMediaEmbedded YouTube/Vimeo with custom thumbnail and play overlayAll Themesblog-feedContentLatest blog posts with category filter (requires blog integration)All Themesfaq-accordionSupportExpandable FAQ list with custom questions and rich text answersAll Themescontact-formConversionInquiry form: name, email, phone, travel dates, message, honeypotAll Themesnewsletter-signupConversionEmail capture with Mailchimp/custom webhook integrationAll Themescta-bannerConversionFull-width call-to-action banner with heading, text, and buttonAll Themesrich-textContentFree-form rich text editor: headings, paragraphs, lists, links, imagesAll Themestwo-column-contentContentSide-by-side text and image with configurable orderAll Themesicon-featuresContentGrid of feature blocks: icon + heading + short descriptionAll Themespricing-cardsCommerceTiered pricing display for packages or service levelsAll Themesbooking-widgetConversionEmbedded booking widget pulling live availability from booking-serviceAll Themessocial-feedSocialInstagram or Facebook feed embed with grid layoutPremiumcustom-htmlAdvancedRaw HTML/CSS/JS block injection (premium, sanitized)PremiumbreadcrumbsNavigationAuto-generated breadcrumb trail for inner pagesAll Themesrelated-packagesCommerceAuto-populated related packages based on tags/region of current packageAll Themespage-headerContentInner page hero: title, breadcrumb, background imageAll ThemesfooterStructureFull-width footer with logo, links, contact, social, copyrightAll ThemesnavbarStructureSticky navigation bar with logo, menu, search, CTA buttonAll Themes10. Database Integration with Product Data10.1 Integration ArchitectureTheme sections that display packages, regions, or destinations pull data from product-service at render time. The integration supports two modes:ModeDescriptionStatic modeSpecific packages/destinations are selected in the editor. IDs are stored in section content JSON. At render time, product-service is queried by those IDs. Best for Featured Packages, Homepage Hero.Dynamic modeSections display packages filtered by rules: region, country, category, price range, featured flag. Rules stored in section settings. Renderer queries product-service with filter params. Best for Package Grid, Region Explorer.10.2 Package Grid Section — Data FlowTypeScript// website-renderer: PackageGrid section component
+export async function PackageGrid({ settings, content }: PackageGridProps) {
+  // Dynamic fetch at render time (SSR/ISR)
+  const packages = await fetch(`${BUILDER_API}/data/packages?${
+    new URLSearchParams({
+      tenantId: context.tenantId,
+      regionId: settings.filterRegion || '',
+      countryId: settings.filterCountry || '',
+      category:  settings.filterCategory || '',
+      featured:  settings.showFeaturedOnly ? 'true' : '',
+      limit:     settings.itemCount || '12',
+      sortBy:    settings.sortBy || 'popularity',
+    })
+  }`).then(r => r.json());
+
+  return (
+    <section className="package-grid">
+      <PackageFilter regions={regions} categories={categories} />
+      <div className="grid grid-cols-3 gap-6">
+        {packages.map(pkg => <PackageCard key={pkg.id} package={pkg} />)}
+      </div>
+    </section>
+  );
+}
+10.3 Package Selector in EditorWhen a section field is type: "package-selector", the editor shows a live searchable dropdown that queries the tenant's actual package catalog. This means editors always see real data, never placeholders:Search by package name in real time (debounced 300ms)Filter by region or category to narrow resultsSelected packages show thumbnail, name, price — drag to reorderBadge shows if package is currently inactive/unpublished (warns editor)Max selection limit configurable per section schema11. Publishing Pipeline11.1 Publish Flow (Atomic Swap)Publishing is an all-or-nothing transaction. If any step fails, the database rolls back and the current live theme remains untouched:Agency clicks "Publish Theme" in editor toolbarFrontend calls POST /themes/:id/publish with optional publish notePublisherService starts a PostgreSQL transaction:a. Create snapshot of current theme configuration (theme_snapshots insert)b. Update current PUBLISHED theme status to DRAFTc. Update target theme status to PUBLISHED, set published_atd. Verify single-published constraint (DB enforces via partial unique index)On commit success: emit ThemePublished event (via event bus)CacheInvalidationService consumes event: purge Cloudflare + bust Next.js ISRWebSocket broadcasts publish completion to all open editor tabs for this tenantAudit log entry written with publisher identity and snapshot reference11.2 Rollback FlowAgency selects snapshot from Version History panelCalls POST /themes/:id/rollback/:snapshotIdSnapshotService loads frozen configuration JSON from theme_snapshotsCreates new DRAFT theme instance with that configurationAgency can review, then publish the restored draftRollback creates a new draft rather than directly publishing, giving the agency a chance to review the restored version before it goes live.12. Implementation PhasesPhase 1 — Foundation & Core EnginePhase 1 GoalA working website-builder-service with database schema, theme package structure, and a minimal but fully functional editor that can create, save, and preview a single theme for a single tenant.Database: Create all tables (website_themes, website_pages, page_sections, tenant_domain_configs, website_global_settings, theme_media_assets, theme_snapshots)Shared types: Define all TypeScript interfaces for theme configuration, section schemas, domain config in shared-types packagewebsite-builder-service: Scaffold NestJS modules — themes, sections, pages, domains, publishingImplement full CRUD APIs for themes, pages, sections with tenant isolation guardsImplement theme schema validation pipe — validates section content against schema definitionCreate two complete theme packages: adventure-bold and serene-journey with all 30 sectionsAdmin editor: Build basic page tree + section list UI (no drag-drop yet, just add/remove/reorder via buttons)Schema-driven settings panel: auto-render fields for text, textarea, url, toggle, selectwebsite-renderer: Implement tenant resolution middleware + section renderer + homepage ISRCloudflare: Wildcard DNS setup for *.hamrotourist.com + Worker for subdomain routingPreview: Draft theme preview via preview_token parameterPhase 2 — All Themes + Drag-Drop EditorPhase 2 GoalComplete all 6 themes, full drag-and-drop editor, live preview sync, and all media/image field types.Complete remaining 4 themes: heritage-classic, urban-explorer, mountain-vista, family-voyageImplement @dnd-kit drag-and-drop for section reordering and adding from paletteAdd media field type: image uploader → media-service → CDN URL stored in section contentImplement live preview iframe with postMessage sync for real-time field updatesAdd undo/redo stack (Zustand) with 50-step historyImplement auto-save with 2-second debounce and "Saving..." indicatorColor picker and range slider field types in settings panelAdd package-selector, region-selector, country-selector field types (live data from product-service)Navigation menu editor: drag-and-drop nav builder for header and footer menusWebsite global settings panel: logo, favicon, contact info, social links, colorsMulti-theme workspace: theme dashboard showing published + all drafts with status badgesTheme duplication functionalityPhase 3 — Publishing, Versioning & Custom DomainsPhase 3 GoalProduction-grade publishing pipeline with atomic swaps, version history/rollback, and custom domain support for premium plans.Atomic publish transaction with constraint enforcementSnapshot system: auto-snapshot on every publish, version history UI panelRollback: restore any snapshot as new draft, then publishCloudflare cache invalidation on publish: purge CDN + trigger ISR revalidationCustom domain workflow: UI form → DNS TXT verification → Cloudflare Custom Hostname → SSL provisionCloudflare KV domain mapping for edge-speed custom domain routingDomain status polling and webhooks: show verification progress in admin UISubdomain availability checker with real-time validationbilling-service integration: gate custom domain feature behind premium planAudit log viewer: show publish history, who published, when, from which IPPhase 4 — SEO, Analytics & Advanced SectionsPhase 4 GoalFull SEO control per page, Google Analytics/Meta Pixel integration, sitemap generation, and advanced premium sections.Per-page SEO editor: title, meta description, Open Graph image, canonical URLAutomatic sitemap.xml generation per tenant (updated on publish)Automatic robots.txt with tenant-specific allow/disallow rulesStructured data (JSON-LD) injection: TourPackage, Organization, LocalBusiness schemasAnalytics integration: Google Analytics 4 and Meta Pixel ID input in global settingsDestination Map section: Leaflet.js interactive map with package-linked markersBooking Widget section: embed live availability from booking-serviceSocial Feed section: Instagram Basic Display API (premium)Custom HTML block section (premium — sanitized via DOMPurify)Image gallery with Cloudinary-powered transformations via media-servicePerformance audit tool: built-in Lighthouse-style score in admin dashboardPhase 5 — Premium Features & Platform MaturityPhase 5 GoalAdvanced agency features, white-labeling, multi-language support, A/B testing groundwork, and platform-level theme marketplace.Multi-language: section content stored per locale, language switcher on published siteCustom fonts: Google Fonts integration in theme settings (premium plans)Advanced CSS/color override: per-section background, padding, custom CSS class injectionPage password protection: optional password gate for coming-soon or member pagesBlog system: basic blog with post management, categories, and blog-feed section integrationForm submissions storage: contact form responses stored in DB, viewable in admin, email notificationA/B testing groundwork: ability to mark a section variant, track conversion eventsTheme marketplace: super-admin can deploy new themes globally; agencies can browse and installAgency theme export/import: backup and transfer theme configurationsCollaborator roles: agency-level roles (Owner/Editor/Viewer) with granular website editor permissions13. Docker & Infrastructure Configuration13.1 Docker Compose AdditionsYAML# docker-compose.yml (additions for website builder)
+services:
+  website-builder-service:
+    build: ./services/website-builder-service
+    environment:
+      - DATABASE_URL=postgresql://...
+      - CLOUDFLARE_API_TOKEN=${CF_API_TOKEN}
+      - CLOUDFLARE_ZONE_ID=${CF_ZONE_ID}
+      - CLOUDFLARE_ACCOUNT_ID=${CF_ACCOUNT_ID}
+      - PRODUCT_SERVICE_URL=product-service:5004
+      - MEDIA_SERVICE_URL=media-service:5005
+      - REVALIDATE_SECRET=${REVALIDATE_SECRET}
+    depends_on: [postgres, redis]
+
+  website-renderer:
+    build: ./apps/website-renderer
+    environment:
+      - NEXT_PUBLIC_BUILDER_API=https://api.hamrotourist.com
+      - BUILDER_API_INTERNAL=http://website-builder-service:3009
+      - REVALIDATE_SECRET=${REVALIDATE_SECRET}
+    ports:
+      - "3001:3000"  # External port for Cloudflare to proxy
+13.2 Environment VariablesVariablePurposeCF_API_TOKENCloudflare API token with Zone:Edit + DNS:Edit + Workers:Edit permissionsCF_ZONE_IDCloudflare Zone ID for hamrotourist.comCF_ACCOUNT_IDCloudflare Account ID for KV and WorkersCF_KV_NAMESPACE_IDKV namespace ID for DOMAIN_MAPREVALIDATE_SECRETShared secret for Next.js on-demand ISR revalidation endpointPREVIEW_TOKEN_SECRETJWT signing secret for preview share tokens14. Security Architecture14.1 Tenant IsolationAll database queries include tenant_id in WHERE clause — enforced by TenantIsolationGuard at NestJS interceptor levelRow-level policies considered in PostgreSQL for double enforcement on critical tablesJWT tokens carry tenant_id claim — API gateway validates and injects into request contextNo cross-tenant data leakage: section data, media assets, domain configs are all tenant-scoped14.2 Editor SecurityCustom HTML blocks (premium): server-side sanitization via DOMPurify before storage and renderCustom scripts field: CSP nonce injection, only allowed on premium plansMedia uploads: file type validation, malware scanning via ClamAV in media-servicePreview tokens: JWT-signed, 7-day expiry, single-use option for sensitive previews14.3 Rate LimitingEndpointLimitEditor auto-save10 saves/minute per tenant to prevent DB hammeringPublish action5 publishes/hour per tenant (prevents cache invalidation spam)Domain verification check12 checks/hour (prevents DNS polling abuse)Public websiteCloudflare rate limiting: 500 req/min per IP at edge15. Performance Strategy15.1 Core Web Vitals TargetsMetricTarget & StrategyLCP (Largest Contentful Paint)< 2.0s — hero images preloaded, Cloudflare CDN deliveryFID / INP (Interaction to Next Paint)< 50ms — minimal JS, no render-blocking third-party scriptsCLS (Cumulative Layout Shift)< 0.05 — explicit image dimensions in all theme componentsTime to First Byte (TTFB)< 200ms — ISR pages served from Cloudflare edge cacheLighthouse Score Target> 90 on all four categories for published sites15.2 Image OptimizationAll images routed through Next.js Image component (automatic WebP conversion, lazy loading)Hero images: preloaded with priority flag, explicit aspect ratios to prevent CLSmedia-service generates responsive sizes: 400w, 800w, 1200w, 1920wCloudflare Image Resizing for on-the-fly transformations at edgeLazy loading threshold: 200px below viewport using IntersectionObserver15.3 Caching StrategyLayerStrategyStatic pages (Home, About)ISR with 60s TTL + Cloudflare edge cache (s-maxage=300)Package listing pagesSSR + Cloudflare cache with surrogate keys. Busted when product updated.Package detail pagesISR with 300s TTL + on-demand bust when product-service emits update eventAPI responses (packages, regions)Redis cache in website-builder-service: 120s TTL. Invalidated on product updates.Theme configurationRedis cache: invalidated on any theme save. TTL=0 (explicit invalidation only).Media assetsCloudflare CDN: 1-year cache-control for immutable media URLs (content-hashed)16. Admin UI — Website Builder Flows16.1 Theme Dashboard (Overview Page)The Website section in admin-frontend shows:Published theme card: large preview screenshot, theme name, last published date, "Customize" and "View Site" buttonsDraft themes: smaller cards with "Edit", "Preview", "Publish", "Duplicate", "Delete" actions"Add Theme" button: opens theme picker modal showing all 6 base themes with screenshots and descriptionsVersion History: accessible from published theme card — shows last 10 publish snapshots with rollback buttonQuick stats: visits today (from analytics), last publish, active pages count16.2 Editor Workspace LayoutZoneContents & BehaviorLeft Sidebar (280px)Page tree navigator at top. Section palette below (categorized, searchable). Click section to add, or drag to canvas.Center Canvas (flexible)Live preview iframe. Click any section to select it. Drag handle to reorder. Toolbar: device switcher, zoom, external preview link.Right Panel (320px)Schema-driven settings for selected section. Global Theme Settings tab at bottom.Top BarBreadcrumb: Website > Theme Name > Page Name. Auto-save indicator. Undo/Redo. Preview button. Publish button (with confirmation modal).16.3 Publish Confirmation ModalClicking Publish opens a modal containing:Diff summary: "You have made X changes since last publish"Optional publish note field (saved with snapshot for history)Warning if no changes made since last publishConfirmation button: "Publish Now — Your site will update within 30 seconds"After publish: green toast + "View live site →" link opens in new tab17. Testing Strategy17.1 Unit & Integration TestingTest AreaApproachTheme schema validationJest: test that all section types validate correctly against their schemas. Test invalid data rejection.Publishing serviceJest + test DB: verify atomic swap, snapshot creation, rollback, single-published constraint enforcement.Tenant isolationJest: ensure no API endpoint returns data from a different tenant. Matrix test: 3 tenants × all endpoints.Domain serviceJest + mock Cloudflare client: test subdomain change, custom domain verification flow, KV sync.Cache invalidationJest: verify correct Cloudflare purge requests and ISR revalidation calls on publish.17.2 End-to-End TestingPlaywright E2E: Full editor flow — create theme, add sections, customize, publish, verify live site reflects changesCustom domain flow: E2E test with mocked DNS verification proving domain goes activeRollback flow: publish → change → publish again → rollback → verify previous content liveVisual regression: Percy/Chromatic snapshots of all 6 themes × 3 breakpoints on each publish18. Monitoring & ObservabilityConcernImplementationService healthwebsite-builder-service: /health endpoint with DB connectivity check. Prometheus metrics exported.Publish pipelineCustom metric: publish_success_total, publish_duration_seconds, cache_invalidation_duration_secondsRenderer performanceVercel Analytics (if deployed there) or custom Prometheus export from Next.js via instrumentation.tsDomain verificationScheduled job (every 5min) checks pending domain verifications. Alert if stuck > 2 hours.Error trackingSentry integration in both website-builder-service and website-renderer with tenant context tagUptime monitoringCloudflare Health Checks on renderer + Pingdom on sampled tenant subdomainsCore Web VitalsGoogle Search Console API aggregated per tenant subdomain. Dashboard in super-admin.19. API Gateway UpdatesThe existing api-gateway needs the following additions to route website builder traffic:JavaScript// api-gateway additions
+// Route all /website-builder/* requests to website-builder-service
+{
+  prefix: '/website-builder',
+  service: 'website-builder-service',
+  middlewares: [AuthGuard, TenantResolutionMiddleware, RateLimitMiddleware],
+}
+
+// Route all /renderer/* requests (internal) to website-renderer
+// External traffic hits Cloudflare → website-renderer directly (not via api-gateway)
+// api-gateway is only for admin panel → API communication
+20. Feature Gating by PlanFeatureStarterProEnterpriseBasic subdomain✓✓✓All 6 themes✓✓✓All standard sections✓✓✓Drag-drop editor✓✓✓Live preview✓✓✓Publish + version history5 snapshots20 snapshotsUnlimitedCustom domain✗✓✓SSL on custom domain✗✓✓Social Feed section✗✓✓Custom HTML section✗✗✓Analytics integration✗✓✓Custom scripts (head/body)✗✗✓Custom fonts (Google Fonts)✗✓✓Preview share tokens✗3 activeUnlimitedBlog system✗✓✓Multi-language✗✗✓21. Integration Checklist with Existing ServicesServiceIntegration Detailproduct-servicewebsite-builder-service calls product-service (gRPC/REST internal) to fetch packages, regions, countries, destinations for section data fields and live data integration. Events: ProductUpdated → invalidate renderer cache for affected tenant.media-serviceAll image/video uploads in the editor route through media-service. media-proxy.service.ts wraps the upload API and stores returned CDN URLs in theme_media_assets table.domain-servicewebsite-builder-service consumes domain-service for custom domain status tracking. Domain activation emits DomainActivated event → Cloudflare KV sync.billing-serviceFeature gate checks: custom domain, premium sections, analytics. website-builder-service calls billing-service to verify plan tier on premium endpoint access.tenant-serviceTenant slug for subdomain generation pulled from tenant-service on account creation. Auto-creates subdomain entry in tenant_domain_configs.auth-serviceStandard JWT validation. Editor endpoints require role: AGENCY_ADMIN or AGENCY_EDITOR. Super-admin endpoints require PLATFORM_ADMIN role.notification-serviceEvents: PublishSuccess, DomainVerified, DomainFailed → notification-service triggers email to agency owner.crm-serviceTestimonials section queries crm-service for approved customer reviews to populate the testimonials section dynamically.booking-serviceBooking Widget section embeds a widget that communicates directly with booking-service for availability checks. Package links on site pass through booking-service for reservation flow.22. Appendix — Key Design DecisionsA. Why JSON Schema for Theme Fields?Schema-driven field definitions mean the editor UI is generated automatically from the theme package — no separate editor config files, no duplication. Adding a new field to a section is one TypeScript object addition and it immediately appears in the editor panel. This also enables automated validation and type safety end-to-end.B. Why JSONB for Section Content?Section content is inherently varied and schema-divergent across section types. Storing it as JSONB gives flexibility without a table-per-section-type explosion. PostgreSQL JSONB offers indexed queries where needed (e.g., find all sections using a specific package ID). The theme schema provides application-level validation before any JSONB write.C. Why One Published Theme Enforced by DB Constraint?The partial unique index (UNIQUE WHERE status = 'published') makes it physically impossible to have two published themes for one tenant — even with concurrent API calls. This removes an entire class of race condition bugs that would be dangerous for live sites.D. Why ISR over Pure SSG or Pure SSR?ISR gives the best balance: pages are statically cached at Cloudflare edge for performance, but automatically regenerate on a timer and can be instantly busted on publish. Pure SSG would require a full rebuild on every publish (slow for agencies with many packages). Pure SSR on every request would be expensive at scale and slower for visitors.E. Why Cloudflare Workers for Domain Routing (Not NGINX)?Cloudflare Workers execute at 200+ edge locations globally in < 1ms. Custom domain routing at the edge means no extra RTT to origin for domain resolution. The KV store lookup is sub-millisecond. An NGINX approach would centralize this routing at the origin, adding latency for all global visitors.

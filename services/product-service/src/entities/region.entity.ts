@@ -7,7 +7,6 @@ import { CountryEntity } from './country.entity';
 import { TourEntity } from './tour.entity';
 import { TrekEntity } from './trek.entity';
 import { ActivityEntity } from './activity.entity';
-import { FaqEntity } from './faq.entity';
 
 @Entity('regions')
 @Index(['slug'])  // ✅ Index for slug lookups
@@ -55,8 +54,8 @@ export class RegionEntity {
   @OneToMany(() => ActivityEntity, (a) => a.region)
   activities: ActivityEntity[];
 
-  @OneToMany(() => FaqEntity, (f) => f.entityId, { cascade: true })
-  faqs: FaqEntity[];
+  // Polymorphic relations (FAQs) are managed by PolymorphicRelationsService
+  faqs?: any[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

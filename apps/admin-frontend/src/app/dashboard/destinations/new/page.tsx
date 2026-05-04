@@ -1,52 +1,55 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiGet, apiPost } from '@/lib/api';
-import ImageUploadField from '@/components/image-upload-field';
+import { slugify } from '@/lib/slugify';
+import MediaPanel, { defaultMediaState, mediaStateToApi, MediaFormState } from '@/components/cms/media-panel';
+import SeoPanel, { defaultSeoState, seoStateToApi, SeoFormState } from '@/components/cms/seo-panel';
+import FaqManager, { FaqRow } from '@/components/cms/faq-manager';
+import GroupDiscountManager, { GroupDiscountRow } from '@/components/cms/group-discount-manager';
+import ItineraryManager, { ItineraryDayRow } from '@/components/cms/itinerary-manager';
+import ListField, { linesToArray } from '@/components/cms/list-field';
+
+interface Region { id: string; name: string; country?: { name: string } }
 
 export default function NewDestinationPage() {
   const router = useRouter();
-  const [form, setForm] = useState({
-    title: '',
-    regionId: '',
-    difficulty: 'moderate',
-    description: '',
-    maxAltitude: '',
-    durationDays: '',
-    basePrice: '',
-    status: 'draft',
-    sortOrder: 0,
-    coverImageUrl: null as string | null,
-    highlights: '',
-    inclusions: '',
-    exclusions: '',
-    media: { bannerImage: null as string | null, cardImage: null as string | null, ogImage: null as string | null, galleryImages: [] as string[] },
-    seo: { metaTitle: '', metaDescription: '', metaKeywords: '', ogTitle: '', ogDescription: '', canonicalUrl: '', noIndex: false, noFollow: false },
-    faqs: [] as { question: string; answer: string }[],
-  });
-  const [regions, setRegions] = useState<{ id: string; name: string }[]>([]);
+  const [regions, setRegions] = useState<Region[]>([]);
+
+  const [title, setTitle] = useState('');
+  const [regionId, setRegionId] = useState('');
+  const [difficulty, setDifficulty] = useState<'easy' | 'moderate' | 'hard' | 'extreme'>('moderate');
+  const [description, setDescription] = useState('');
+  const [maxAltitude, setMaxAltitude] = useState(0);
+  const [durationDays, setDurationDays] = useState(1);
+  const [basePrice, setBasePrice] = useState(0);
+  const [sortOrder, setSortOrder] = useState(0);
+  const [status, setStatus] = useState<'draft' | 'published'>('draft');
+
+  const [highlights, setHighlights] = useState('');
+  const [inclusions, setInclusions] = useState('');
+  const [exclusions, setExclusions] = useState('');
+
+  const [itinerary, setItinerary] = useState<ItineraryDayRow[]>([]);
+  const [media, setMedia] = useState<MediaFormState>(defaultMediaState());
+  const [seo, setSeo] = useState<SeoFormState>(defaultSeoState());
+  const [faqs, setFaqs] = useState<FaqRow[]>([]);
+  const [discounts, setDiscounts] = useState<GroupDiscountRow[]>([]);
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
-
-  function slugify(s: string) {
-    return s.toLowerCase().trim().replace(/[^a-z0-9-\s]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
-  }
-
-  function linesToArray(s: string) {
-    return s.split('\n').map((l) => l.trim()).filter(Boolean);
-  }
 
   useEffect(() => {
-    async function fetchRegions() {
-      const res = await apiGet('/products/regions');
+    async function load() {
+      const res = await apiGet<any>('/products/regions');
       if (res.success) {
-        setRegions(res.data as { id: string; name: string }[]);
-        setFetching(false);
+        const payload: any = res.data;
+        const list: Region[] = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
+        setRegions(list);
       }
     }
-    fetchRegions();
+    load();
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -55,115 +58,74 @@ export default function NewDestinationPage() {
     setLoading(true);
 
     const body: Record<string, unknown> = {
-      title: form.title,
-      regionId: form.regionId,
-      difficulty: form.difficulty,
-      slug: slugify(form.title),
-      status: form.status,
-      sortOrder: Number(form.sortOrder),
+      title: title.trim(),
+      slug: slugify(title),
+      regionId,
+      difficulty,
+      durationDays: Number(durationDays) || 1,
+      sortOrder: Number(sortOrder) || 0,
     };
+    if (description.trim()) body.description = description.trim();
+    if (Number(maxAltitude)) body.maxAltitude = Number(maxAltitude);
+    if (Number(basePrice)) body.basePrice = Number(basePrice);
+    if (media.bannerImage) body.coverImageUrl = media.bannerImage;
 
-    if (form.description) body.description = form.description;
-    if (form.maxAltitude) body.maxAltitude = Number(form.maxAltitude);
-    if (form.durationDays) body.durationDays = Number(form.durationDays);
-    if (form.basePrice) body.basePrice = Number(form.basePrice);
-    if (form.coverImageUrl) body.coverImageUrl = form.coverImageUrl;
-    if (form.highlights.trim()) body.highlights = linesToArray(form.highlights);
-    if (form.inclusions.trim()) body.inclusions = linesToArray(form.inclusions);
-    if (form.exclusions.trim()) body.exclusions = linesToArray(form.exclusions);
-    if (form.media.bannerImage || form.media.cardImage || form.media.ogImage || form.media.galleryImages.length) {
-      body.media = {
-        ...(form.media.bannerImage && { bannerImage: form.media.bannerImage }),
-        ...(form.media.cardImage && { cardImage: form.media.cardImage }),
-        ...(form.media.ogImage && { ogImage: form.media.ogImage }),
-        ...(form.media.galleryImages.length && { galleryImages: form.media.galleryImages }),
-      };
-    }
-    if (form.seo.metaTitle || form.seo.metaDescription || form.seo.metaKeywords) {
-      body.seo = {
-        ...(form.seo.metaTitle && { metaTitle: form.seo.metaTitle }),
-        ...(form.seo.metaDescription && { metaDescription: form.seo.metaDescription }),
-        ...(form.seo.metaKeywords && { metaKeywords: form.seo.metaKeywords.split(',').map((s: string) => s.trim()).filter(Boolean) }),
-        ...(form.seo.ogTitle && { ogTitle: form.seo.ogTitle }),
-        ...(form.seo.ogDescription && { ogDescription: form.seo.ogDescription }),
-        ...(form.seo.canonicalUrl && { canonicalUrl: form.seo.canonicalUrl }),
-        noIndex: form.seo.noIndex,
-        noFollow: form.seo.noFollow,
-      };
-    }
-    if (form.faqs.length) {
-      body.faqs = form.faqs.filter((f) => f.question && f.answer);
-    }
+    const hl = linesToArray(highlights);
+    const inc = linesToArray(inclusions);
+    const exc = linesToArray(exclusions);
+    if (hl.length) body.highlights = hl;
+    if (inc.length) body.inclusions = inc;
+    if (exc.length) body.exclusions = exc;
+    if (itinerary.length) body.itinerary = itinerary;
+
+    const mediaPayload = mediaStateToApi(media);
+    if (mediaPayload) body.media = mediaPayload;
+    const seoPayload = seoStateToApi(seo);
+    if (seoPayload) body.seo = seoPayload;
+    if (faqs.length) body.faqs = faqs.filter((f) => f.question.trim() && f.answer.trim());
+    if (discounts.length) body.groupDiscounts = discounts;
 
     const res = await apiPost('/products/treks', body);
     setLoading(false);
-
-    if (res.success) {
-      router.push('/dashboard/destinations');
-    } else {
-      setError('error' in res ? res.error.message : 'Failed to create destination');
-    }
-  }
-
-  if (fetching) {
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-ht-violet border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    if (res.success) router.push('/dashboard/destinations');
+    else setError('error' in res ? res.error.message : 'Failed to create destination');
   }
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <a href="/dashboard/destinations" className="font-body text-sm text-ht-soft hover:text-ht-violet transition-colors">
           ← Back to Destinations
         </a>
-        <h1 className="font-display font-bold text-3xl text-ht-text mt-2">New Destination</h1>
+        <h1 className="font-display font-bold text-2xl sm:text-3xl text-ht-text mt-2">New destination</h1>
+        <p className="font-body text-sm text-ht-soft mt-1">Full CMS: media, SEO, itinerary, FAQs, group discounts.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
-        {error && (
-          <div className="px-4 py-3 rounded-xl bg-ht-rose/10 border border-ht-rose/30 text-ht-rose text-sm font-body">{error}</div>
-        )}
+      <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
+        {error && <div className="px-4 py-3 rounded-xl bg-ht-rose/10 border border-ht-rose/30 text-ht-rose text-sm font-body">{error}</div>}
 
         <div className="bg-ht-surface border border-ht-border rounded-xl2 p-6 space-y-5">
-          <div>
-            <label className="block font-body text-sm text-ht-soft mb-1.5">Destination name *</label>
-            <input
-              type="text"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              required
-              className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]"
-              placeholder="Everest Base Camp"
-            />
-          </div>
-
-          <div>
-            <label className="block font-body text-sm text-ht-soft mb-1.5">Region *</label>
-            <select
-              value={form.regionId}
-              onChange={(e) => setForm({ ...form, regionId: e.target.value })}
-              required
-              className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]"
-            >
-              <option value="">Select region…</option>
-              {regions.map((r) => (
-                <option key={r.id} value={r.id}>{r.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <h3 className="font-display font-semibold text-lg text-ht-text">Basic info</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <label className="block font-body text-sm text-ht-soft mb-1.5">Title *</label>
+              <input type="text" required value={title} onChange={(e) => setTitle(e.target.value)}
+                placeholder="Everest Base Camp Trek"
+                className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]" />
+              {title && <p className="mt-1 text-[10px] font-mono text-ht-muted">Slug: {slugify(title) || '—'}</p>}
+            </div>
+            <div>
+              <label className="block font-body text-sm text-ht-soft mb-1.5">Region *</label>
+              <select required value={regionId} onChange={(e) => setRegionId(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]">
+                <option value="">Select region…</option>
+                {regions.map((r) => <option key={r.id} value={r.id}>{r.country?.name ? `${r.country.name} — ${r.name}` : r.name}</option>)}
+              </select>
+            </div>
             <div>
               <label className="block font-body text-sm text-ht-soft mb-1.5">Difficulty *</label>
-              <select
-                value={form.difficulty}
-                onChange={(e) => setForm({ ...form, difficulty: e.target.value })}
-                required
-                className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]"
-              >
+              <select required value={difficulty} onChange={(e) => setDifficulty(e.target.value as any)}
+                className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]">
                 <option value="easy">Easy</option>
                 <option value="moderate">Moderate</option>
                 <option value="hard">Hard</option>
@@ -171,294 +133,69 @@ export default function NewDestinationPage() {
               </select>
             </div>
             <div>
-              <label className="block font-body text-sm text-ht-soft mb-1.5">Max Altitude (m)</label>
-              <input
-                type="number"
-                min={0}
-                value={form.maxAltitude}
-                onChange={(e) => setForm({ ...form, maxAltitude: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]"
-                placeholder="5364"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block font-body text-sm text-ht-soft mb-1.5">Duration (days)</label>
-              <input
-                type="number"
-                min={1}
-                value={form.durationDays}
-                onChange={(e) => setForm({ ...form, durationDays: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]"
-                placeholder="14"
-              />
+              <label className="block font-body text-sm text-ht-soft mb-1.5">Duration (days) *</label>
+              <input type="number" min={1} required value={durationDays} onChange={(e) => setDurationDays(Number(e.target.value))}
+                className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]" />
             </div>
             <div>
-              <label className="block font-body text-sm text-ht-soft mb-1.5">Base Price ($)</label>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                value={form.basePrice}
-                onChange={(e) => setForm({ ...form, basePrice: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]"
-                placeholder="1200"
-              />
+              <label className="block font-body text-sm text-ht-soft mb-1.5">Max altitude (m)</label>
+              <input type="number" min={0} value={maxAltitude} onChange={(e) => setMaxAltitude(Number(e.target.value))}
+                className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]" />
+            </div>
+            <div>
+              <label className="block font-body text-sm text-ht-soft mb-1.5">Base price ($)</label>
+              <input type="number" min={0} step={0.01} value={basePrice} onChange={(e) => setBasePrice(Number(e.target.value))}
+                className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]" />
             </div>
             <div>
               <label className="block font-body text-sm text-ht-soft mb-1.5">Sort order</label>
-              <input
-                type="number"
-                min={0}
-                value={form.sortOrder}
-                onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })}
-                className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]"
-              />
+              <input type="number" min={0} value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value))}
+                className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]" />
+            </div>
+            <div>
+              <label className="block font-body text-sm text-ht-soft mb-1.5">Status</label>
+              <select value={status} onChange={(e) => setStatus(e.target.value as 'draft' | 'published')}
+                className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]">
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+              </select>
             </div>
           </div>
-
-          <div>
-            <label className="block font-body text-sm text-ht-soft mb-1.5">Status</label>
-            <select
-              value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value })}
-              className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]"
-            >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-            </select>
-          </div>
-
           <div>
             <label className="block font-body text-sm text-ht-soft mb-1.5">Description</label>
-            <textarea
-              rows={4}
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors resize-none"
-              placeholder="Famous trek through the Khumbu region..."
-            />
+            <textarea rows={5} value={description} onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors resize-none" />
           </div>
-
-          <div>
-            <label className="block font-body text-sm text-ht-soft mb-1.5">Highlights (one per line)</label>
-            <textarea
-              rows={3}
-              value={form.highlights}
-              onChange={(e) => setForm({ ...form, highlights: e.target.value })}
-              className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors resize-none"
-              placeholder="Stunning mountain views&#10;Local culture experience&#10;Remote villages"
-            />
-          </div>
-
-          <div>
-            <label className="block font-body text-sm text-ht-soft mb-1.5">Inclusions (one per line)</label>
-            <textarea
-              rows={3}
-              value={form.inclusions}
-              onChange={(e) => setForm({ ...form, inclusions: e.target.value })}
-              className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors resize-none"
-              placeholder="All meals&#10;Guide and porter&#10;National park permit"
-            />
-          </div>
-
-          <div>
-            <label className="block font-body text-sm text-ht-soft mb-1.5">Exclusions (one per line)</label>
-            <textarea
-              rows={3}
-              value={form.exclusions}
-              onChange={(e) => setForm({ ...form, exclusions: e.target.value })}
-              className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors resize-none"
-              placeholder="Flights to Lukla&#10;Travel insurance&#10;Personal gear"
-            />
-          </div>
-
-          <ImageUploadField
-            label="Cover Image"
-            value={form.coverImageUrl}
-            onChange={(url) => setForm({ ...form, coverImageUrl: url })}
-            category="treks"
-          />
         </div>
 
-        {/* Media */}
         <div className="bg-ht-surface border border-ht-border rounded-xl2 p-6 space-y-5">
-          <h3 className="font-display font-semibold text-lg text-ht-text">Media</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <ImageUploadField
-              label="Banner Image"
-              value={form.media.bannerImage}
-              onChange={(url) => setForm({ ...form, media: { ...form.media, bannerImage: url } })}
-              category="treks"
-            />
-            <ImageUploadField
-              label="Card Image"
-              value={form.media.cardImage}
-              onChange={(url) => setForm({ ...form, media: { ...form.media, cardImage: url } })}
-              category="treks"
-            />
-          </div>
-          <ImageUploadField
-            label="OG Image"
-            value={form.media.ogImage}
-            onChange={(url) => setForm({ ...form, media: { ...form.media, ogImage: url } })}
-            category="treks"
-          />
+          <h3 className="font-display font-semibold text-lg text-ht-text">What's included</h3>
+          <ListField label="Highlights" value={highlights} onChange={setHighlights} placeholder="Sunrise at Kala Patthar&#10;Sherpa culture&#10;Lukla flight" />
+          <ListField label="Inclusions" value={inclusions} onChange={setInclusions} placeholder="Permits&#10;Licensed guide&#10;Teahouse accommodation" />
+          <ListField label="Exclusions" value={exclusions} onChange={setExclusions} placeholder="International flights&#10;Travel insurance&#10;Personal gear" />
         </div>
 
-        {/* SEO */}
-        <div className="bg-ht-surface border border-ht-border rounded-xl2 p-6 space-y-5">
-          <h3 className="font-display font-semibold text-lg text-ht-text">SEO Settings</h3>
-          <div>
-            <label className="block font-body text-sm text-ht-soft mb-1.5">Meta title</label>
-            <input
-              type="text"
-              value={form.seo.metaTitle}
-              onChange={(e) => setForm({ ...form, seo: { ...form.seo, metaTitle: e.target.value } })}
-              className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]"
-              placeholder="SEO title (max 60 chars)"
-            />
-          </div>
-          <div>
-            <label className="block font-body text-sm text-ht-soft mb-1.5">Meta description</label>
-            <textarea
-              rows={3}
-              value={form.seo.metaDescription}
-              onChange={(e) => setForm({ ...form, seo: { ...form.seo, metaDescription: e.target.value } })}
-              className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors resize-none"
-              placeholder="SEO description (max 160 chars)"
-            />
-          </div>
-          <div>
-            <label className="block font-body text-sm text-ht-soft mb-1.5">Meta keywords</label>
-            <input
-              type="text"
-              value={form.seo.metaKeywords}
-              onChange={(e) => setForm({ ...form, seo: { ...form.seo, metaKeywords: e.target.value } })}
-              className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]"
-              placeholder="keyword1, keyword2, keyword3"
-            />
-          </div>
-          <div>
-            <label className="block font-body text-sm text-ht-soft mb-1.5">OG title</label>
-            <input
-              type="text"
-              value={form.seo.ogTitle}
-              onChange={(e) => setForm({ ...form, seo: { ...form.seo, ogTitle: e.target.value } })}
-              className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]"
-              placeholder="Open Graph title"
-            />
-          </div>
-          <div>
-            <label className="block font-body text-sm text-ht-soft mb-1.5">OG description</label>
-            <textarea
-              rows={2}
-              value={form.seo.ogDescription}
-              onChange={(e) => setForm({ ...form, seo: { ...form.seo, ogDescription: e.target.value } })}
-              className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors resize-none"
-              placeholder="Open Graph description"
-            />
-          </div>
-          <div>
-            <label className="block font-body text-sm text-ht-soft mb-1.5">Canonical URL</label>
-            <input
-              type="text"
-              value={form.seo.canonicalUrl}
-              onChange={(e) => setForm({ ...form, seo: { ...form.seo, canonicalUrl: e.target.value } })}
-              className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]"
-              placeholder="https://..."
-            />
-          </div>
-          <div className="flex items-center gap-6">
-            <label className="flex items-center gap-2 font-body text-sm text-ht-soft">
-              <input
-                type="checkbox"
-                checked={form.seo.noIndex}
-                onChange={(e) => setForm({ ...form, seo: { ...form.seo, noIndex: e.target.checked } })}
-                className="w-4 h-4 accent-ht-violet"
-              />
-              No index
-            </label>
-            <label className="flex items-center gap-2 font-body text-sm text-ht-soft">
-              <input
-                type="checkbox"
-                checked={form.seo.noFollow}
-                onChange={(e) => setForm({ ...form, seo: { ...form.seo, noFollow: e.target.checked } })}
-                className="w-4 h-4 accent-ht-violet"
-              />
-              No follow
-            </label>
-          </div>
+        <div className="bg-ht-surface border border-ht-border rounded-xl2 p-6">
+          <ItineraryManager value={itinerary} onChange={setItinerary} />
         </div>
 
-        {/* FAQs */}
-        <div className="bg-ht-surface border border-ht-border rounded-xl2 p-6 space-y-5">
-          <div className="flex items-center justify-between">
-            <h3 className="font-display font-semibold text-lg text-ht-text">FAQs</h3>
-            <button
-              type="button"
-              onClick={() => setForm({ ...form, faqs: [...form.faqs, { question: '', answer: '' }] })}
-              className="px-4 py-2 rounded-lg font-body text-sm text-ht-text border border-ht-border hover:border-ht-violet transition-all"
-            >
-              + Add FAQ
-            </button>
-          </div>
-          {form.faqs.length === 0 && (
-            <p className="text-sm text-ht-soft font-body">No FAQs yet.</p>
-          )}
-          {form.faqs.map((faq, idx) => (
-            <div key={idx} className="space-y-3 border-b border-ht-border/50 pb-4 last:border-0">
-              <div className="flex items-start gap-3">
-                <div className="flex-1 space-y-3">
-                  <input
-                    type="text"
-                    value={faq.question}
-                    onChange={(e) => {
-                      const next = [...form.faqs];
-                      next[idx] = { ...next[idx], question: e.target.value };
-                      setForm({ ...form, faqs: next });
-                    }}
-                    placeholder="Question"
-                    className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors min-h-[44px]"
-                  />
-                  <textarea
-                    rows={2}
-                    value={faq.answer}
-                    onChange={(e) => {
-                      const next = [...form.faqs];
-                      next[idx] = { ...next[idx], answer: e.target.value };
-                      setForm({ ...form, faqs: next });
-                    }}
-                    placeholder="Answer"
-                    className="w-full px-4 py-3 rounded-xl bg-ht-ink border border-ht-border text-ht-text font-body text-sm placeholder-[#5C5C78] focus:outline-none focus:border-ht-violet transition-colors resize-none"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, faqs: form.faqs.filter((_, i) => i !== idx) })}
-                  className="mt-2 text-ht-rose hover:text-ht-rose/80 font-body text-xs"
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-          ))}
+        <MediaPanel value={media} onChange={setMedia} category="treks" />
+        <SeoPanel value={seo} onChange={setSeo} category="treks" />
+
+        <div className="bg-ht-surface border border-ht-border rounded-xl2 p-6">
+          <FaqManager value={faqs} onChange={setFaqs} />
+        </div>
+        <div className="bg-ht-surface border border-ht-border rounded-xl2 p-6">
+          <GroupDiscountManager value={discounts} onChange={setDiscounts} />
         </div>
 
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-8 py-3 rounded-full font-body font-semibold text-base text-white bg-grad-primary hover:shadow-glow-violet hover:scale-[1.02] transition-all duration-200 min-h-[48px] disabled:opacity-50"
-          >
-            {loading ? 'Creating...' : 'Create Destination'}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button type="submit" disabled={loading || !regionId}
+            className="px-8 py-3 rounded-full font-body font-semibold text-base text-white bg-grad-primary hover:shadow-glow-violet hover:scale-[1.02] transition-all duration-200 min-h-[48px] disabled:opacity-50">
+            {loading ? 'Creating...' : 'Create destination'}
           </button>
-          <a
-            href="/dashboard/destinations"
-            className="px-8 py-3 rounded-full font-body font-semibold text-base text-ht-soft border border-ht-border hover:border-ht-violet hover:text-ht-text transition-all duration-200 min-h-[48px] flex items-center"
-          >
+          <a href="/dashboard/destinations"
+            className="px-8 py-3 rounded-full font-body font-semibold text-base text-ht-soft border border-ht-border hover:border-ht-violet hover:text-ht-text transition-all duration-200 min-h-[48px] flex items-center justify-center">
             Cancel
           </a>
         </div>
