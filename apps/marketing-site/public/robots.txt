@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /site/
+Disallow: /admin/
+
+Sitemap: https://hamrotourist.com/sitemap.xml
