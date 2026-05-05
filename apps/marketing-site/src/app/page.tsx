@@ -1,16 +1,16 @@
 import Nav from '@/components/sections/nav';
 import ScrollHero from '@/components/sections/hero';
-import Marquee from '@/components/sections/marquee';
-import Problem from '@/components/sections/problem';
-import Features from '@/components/sections/features';
-import HowItWorks from '@/components/sections/how-it-works';
-import Comparison from '@/components/sections/comparison';
-import Treks from '@/components/sections/treks';
+import Clients from '@/components/sections/clients';
+import Templates from '@/components/sections/templates';
+import Crm from '@/components/sections/crm';
+import Finance from '@/components/sections/finance';
+import Payments from '@/components/sections/payments';
+import HowToLaunch from '@/components/sections/how-to-launch';
 import Testimonials from '@/components/sections/testimonials';
-import Resources from '@/components/sections/resources';
 import Pricing from '@/components/sections/pricing';
-import FAQ from '@/components/sections/faq';
-import CTA from '@/components/sections/cta';
+import Comparison from '@/components/sections/comparison';
+import Resources from '@/components/sections/resources';
+import FinalOffer from '@/components/sections/final-offer';
 import Footer from '@/components/sections/footer';
 
 export default function LandingPage() {
@@ -19,17 +19,25 @@ export default function LandingPage() {
       <Nav />
       <main>
         <ScrollHero />
-        <Marquee />
-        <Problem />
-        <Features />
-        <HowItWorks />
-        <Comparison />
-        <Treks />
+        <Clients />
+        <section id="features">
+          <Templates />
+          <Crm />
+          <Finance />
+          <Payments />
+        </section>
+        <section id="how-it-works">
+          <HowToLaunch />
+        </section>
         <Testimonials />
-        <Resources />
-        <Pricing />
-        <FAQ />
-        <CTA />
+        <section id="pricing">
+          <Pricing />
+          <Comparison />
+        </section>
+        <section id="resources">
+          <Resources />
+        </section>
+        <FinalOffer />
       </main>
       <Footer />
     </div>

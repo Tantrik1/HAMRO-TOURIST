@@ -24,6 +24,7 @@ export class ProxyService {
       auth: this.config.get('AUTH_SERVICE_URL', `http://localhost:${this.config.get('AUTH_SERVICE_PORT', 4001)}`),
       tenants: this.config.get('TENANT_SERVICE_URL', `http://localhost:${this.config.get('TENANT_SERVICE_PORT', 4002)}`),
       products: this.config.get('PRODUCT_SERVICE_URL', `http://localhost:${this.config.get('PRODUCT_SERVICE_PORT', 4003)}`),
+      builder: this.config.get('WEBSITE_BUILDER_SERVICE_URL', `http://localhost:${this.config.get('WEBSITE_BUILDER_SERVICE_PORT', 4004)}`),
       websites: this.config.get('WEBSITE_BUILDER_SERVICE_URL', `http://localhost:${this.config.get('WEBSITE_BUILDER_SERVICE_PORT', 4004)}`),
       media: this.config.get('MEDIA_SERVICE_URL', `http://localhost:${this.config.get('MEDIA_SERVICE_PORT', 4005)}`),
       domains: this.config.get('DOMAIN_SERVICE_URL', `http://localhost:${this.config.get('DOMAIN_SERVICE_PORT', 4006)}`),

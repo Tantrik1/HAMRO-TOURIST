@@ -28,6 +28,11 @@ export class ProxyController {
   @All('websites/*') @ApiOperation({ summary: 'Proxy to Website Builder Service' })
   async proxyWebsites(@Req() req: Request, @Res() res: Response) { return this.forward('websites', req, res); }
 
+  // Builder (also goes to website builder service)
+  @All('builder') async proxyBuilderRoot(@Req() req: Request, @Res() res: Response) { return this.forward('builder', req, res); }
+  @All('builder/*') @ApiOperation({ summary: 'Proxy to Builder Controller' })
+  async proxyBuilder(@Req() req: Request, @Res() res: Response) { return this.forward('builder', req, res); }
+
   // Media
   @All('media') async proxyMediaRoot(@Req() req: Request, @Res() res: Response) { return this.forward('media', req, res); }
   @All('media/*') @ApiOperation({ summary: 'Proxy to Media Service' })

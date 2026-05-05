@@ -66,6 +66,9 @@ export enum ThemeId {
   ADVENTURE_BOLD = 'adventure-bold',
   SERENE_JOURNEY = 'serene-journey',
   HERITAGE_CLASSIC = 'heritage-classic',
+  URBAN_EXPLORER = 'urban-explorer',
+  MOUNTAIN_VISTA = 'mountain-vista',
+  FAMILY_VOYAGE = 'family-voyage',
 }
 
 export enum WebsiteSectionType {

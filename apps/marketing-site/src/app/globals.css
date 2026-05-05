@@ -1,74 +1,51 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --radius: 0.875rem;
-  --background: oklch(0.995 0.005 80);
-  --foreground: oklch(0.18 0.06 265);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.06 265);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.06 265);
-  --primary: oklch(0.39 0.16 265);
-  --primary-foreground: oklch(0.99 0.005 80);
-  --secondary: oklch(0.96 0.02 60);
-  --secondary-foreground: oklch(0.25 0.08 265);
-  --muted: oklch(0.965 0.01 80);
-  --muted-foreground: oklch(0.45 0.03 265);
-  --accent: oklch(0.68 0.19 45);
-  --accent-foreground: oklch(0.99 0.005 80);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.92 0.01 265);
-  --input: oklch(0.92 0.01 265);
-  --ring: oklch(0.55 0.18 260);
-  --primary-glow: oklch(0.55 0.18 260);
-  --accent-glow: oklch(0.75 0.18 50);
-
-  --gradient-hero: linear-gradient(135deg, oklch(0.39 0.16 265) 0%, oklch(0.55 0.18 260) 50%, oklch(0.68 0.19 45) 100%);
-  --gradient-primary: linear-gradient(135deg, oklch(0.39 0.16 265), oklch(0.55 0.18 260));
-  --gradient-accent: linear-gradient(135deg, oklch(0.68 0.19 45), oklch(0.78 0.17 60));
-  --gradient-soft: linear-gradient(180deg, oklch(0.99 0.01 80) 0%, oklch(0.97 0.02 60) 100%);
-  --shadow-elegant: 0 20px 60px -15px color-mix(in oklab, oklch(0.39 0.16 265) 30%, transparent);
-  --shadow-glow: 0 0 60px color-mix(in oklab, oklch(0.68 0.19 45) 40%, transparent);
-  --shadow-card: 0 10px 30px -10px color-mix(in oklab, oklch(0.18 0.06 265) 12%, transparent);
-  --transition-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --radius: 0.625rem;
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --primary-glow: oklch(0.551 0.027 264.364);
-  --accent-glow: oklch(0.704 0.191 22.216);
+  /* === Hamro Tourist Premium Dark Design System === */
 
-  --gradient-hero: linear-gradient(135deg, oklch(0.929 0.013 255.508) 0%, oklch(0.551 0.027 264.364) 50%, oklch(0.704 0.191 22.216) 100%);
-  --gradient-primary: linear-gradient(135deg, oklch(0.929 0.013 255.508), oklch(0.551 0.027 264.364));
-  --gradient-accent: linear-gradient(135deg, oklch(0.704 0.191 22.216), oklch(0.828 0.189 84.429));
-  --gradient-soft: linear-gradient(180deg, oklch(0.208 0.042 265.755) 0%, oklch(0.129 0.042 264.695) 100%);
-  --shadow-elegant: 0 20px 60px -15px color-mix(in oklab, oklch(0.929 0.013 255.508) 30%, transparent);
-  --shadow-glow: 0 0 60px color-mix(in oklab, oklch(0.704 0.191 22.216) 40%, transparent);
-  --shadow-card: 0 10px 30px -10px color-mix(in oklab, oklch(0.18 0.06 265) 30%, transparent);
+  /* Backgrounds — Deep Space Elevation Scale */
+  --background: #090C14;        /* Base → page bg */
+  --foreground: #E8ECF5;       /* Primary text */
+  --card: #161C2E;             /* Elevated → cards, modals */
+  --card-foreground: #E8ECF5;
+  --popover: #1E2540;          /* Overlay → dropdowns, tooltips */
+  --popover-foreground: #E8ECF5;
+
+  /* Brand Colors */
+  --primary: #F07420;          /* Sunrise Orange — Primary CTA */
+  --primary-foreground: #FFFFFF;
+  --secondary: #3A4D8F;        /* Summit Navy */
+  --secondary-foreground: #FFFFFF;
+
+  --muted: #0F1420;            /* Surface → sidebars, panels */
+  --muted-foreground: #8892A8; /* Muted text */
+  --accent: #3A4D8F;           /* Summit Navy accent */
+  --accent-foreground: #FFFFFF;
+
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  /* Borders & Inputs */
+  --border: rgba(255, 255, 255, 0.06);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: #F07420;
+
+  /* Gradients */
+  --gradient-hero: linear-gradient(135deg, #F07420 0%, #3A4D8F 50%, #2A3B7A 100%);
+  --gradient-primary: linear-gradient(135deg, #F07420, #E86515);
+  --gradient-accent: linear-gradient(135deg, #3A4D8F, #2A3B7A);
+  --gradient-soft: linear-gradient(180deg, #161C2E 0%, #090C14 100%);
+
+  /* Shadows */
+  --shadow-elegant: 0 20px 60px -15px rgba(240, 116, 32, 0.25);
+  --shadow-glow: 0 0 24px rgba(240, 116, 32, 0.25);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
 @layer base {
@@ -79,13 +56,15 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
-    font-family: var(--font-sans);
+    font-family: var(--font-sans), system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, h4 {
-    font-family: var(--font-display);
-    letter-spacing: -0.02em;
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display), system-ui, sans-serif;
+    letter-spacing: -0.03em;
+    font-weight: 700;
   }
 }
 
@@ -109,4 +88,53 @@
     background-clip: text;
     color: transparent;
   }
+
+  /* Glass morphism — Elevated surfaces */
+  .glass {
+    background: rgba(22, 28, 46, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .glass-strong {
+    background: rgba(22, 28, 46, 0.85);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Glow utilities per design system */
+  .glow-orange {
+    box-shadow: 0 0 24px rgba(240, 116, 32, 0.25);
+  }
+  .glow-navy {
+    box-shadow: 0 0 24px rgba(58, 77, 143, 0.20);
+  }
+  .glow-text {
+    text-shadow: 0 0 24px rgba(240, 116, 32, 0.35);
+  }
+
+  /* Spotlight effects */
+  .spotlight {
+    background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(240, 116, 32, 0.08), transparent 70%);
+  }
+  .spotlight-navy {
+    background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(58, 77, 143, 0.10), transparent 70%);
+  }
+
+  /* Shimmer */
+  .shimmer-dark {
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  /* Hide scrollbar */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }

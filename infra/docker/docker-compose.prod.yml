@@ -288,22 +288,10 @@ services:
         APP_NAME: admin-frontend
         APP_PORT: 3000
         NEXT_PUBLIC_API_URL: https://api.hamrotourist.com
+        NEXT_PUBLIC_RENDERER_URL: https://app.hamrotourist.com
     image: hamrotourist/admin-frontend:latest
     ports:
       - "127.0.0.1:3000:3000"
-
-  website-renderer:
-    <<: *nextjs-defaults
-    build:
-      context: ../../
-      dockerfile: Dockerfile.app
-      args:
-        APP_NAME: website-renderer
-        APP_PORT: 3001
-        NEXT_PUBLIC_API_URL: https://api.hamrotourist.com
-    image: hamrotourist/website-renderer:latest
-    ports:
-      - "127.0.0.1:3001:3001"
 
   marketing-site:
     <<: *nextjs-defaults

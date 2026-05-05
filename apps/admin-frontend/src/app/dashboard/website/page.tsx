@@ -137,6 +137,13 @@ export default function WebsitePage() {
             Pick a theme, publish your site, and connect your domain.
           </p>
         </div>
+        <a
+          href="/dashboard/builder"
+          className="inline-flex items-center gap-2 bg-grad-primary text-white font-semibold rounded-full px-5 py-2.5 hover:shadow-glow-violet transition-all text-sm"
+        >
+          Open Builder
+          <Sparkles className="w-4 h-4" />
+        </a>
       </div>
 
       {message && (
